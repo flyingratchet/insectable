@@ -1,0 +1,1206 @@
+##### MANAGING DATABASES #####
+
+#' Read Collection Code tsv
+#' This function reads in a tsv in the standard
+#' Cal Academy Collection data format with correct
+#' data types assigned
+#' @param collectionDBFilePath a tsv file in standard Cal Academy Collection Code Format
+#' @return  a data frame file in standard Cal Academy Collection Code Format
+#' @export
+read_cc_db <- function(collectionDBFilePath){
+  cc.db <- readr::read_tsv(collectionDBFilePath,
+                           col_types = cols(CollectionCode = col_character(),
+                                            BiogeographicRegion = col_character(),
+                                            Country = col_character(),
+                                            Adm1 = col_character(),
+                                            Adm2 = col_character(),
+                                            Region = col_character(),
+                                            Locale = col_character(),
+                                            LocalityNotes = col_character(),
+                                            Lat = col_character(),
+                                            Lon = col_character(),
+                                            LatLonMaxError = col_character(),
+                                            Datum = col_character(),
+                                            Elevation = col_character(),
+                                            ElevationMaxError = col_character(),
+                                            DateCollectedStart = col_date(format = ""),
+                                            DateCollectedEnd = col_date(format = ""),
+                                            Habitat = col_character(),
+                                            Microhabitat = col_character(),
+                                            Method = col_character(),
+                                            Medium = col_character(),
+                                            CollectedBy = col_character(),
+                                            CollectionNotes = col_character(),
+                                            LocalityCode = col_character()
+                           )
+  )
+  return(cc.db)
+}
+
+
+#' Read Specimen Code tsv
+#' This function reads in a tsv in the standard
+#' Cal Academy Specimen data format with correct
+#' data types assigned
+#' @param specimenDBFilePath a tsv file in standard Cal Academy Specimen Code Format
+#' @return a data frame file in standard Cal Academy Specimen Code Format
+#' @export
+read_sc_db <- function(specimenDBFilePath){
+  sc.db <- readr::read_tsv(specimenDBFilePath,
+                           col_types = cols(SpecimenCode = col_character(),
+                                            Class = col_character(),
+                                            Order = col_character(),
+                                            Family = col_character(),
+                                            Subfamily = col_character(),
+                                            Genus = col_character(),
+                                            Species = col_character(),
+                                            LifeStageSex = col_character(),
+                                            DeterminedBy = col_character(),
+                                            DateDetermined = col_date(format = ""),
+                                            TypeStatus = col_character(),
+                                            SpecimenNotes = col_character(),
+                                            DNANotes = col_character(),
+                                            LocatedAt = col_character(),
+                                            OwnedBy = col_character(),
+                                            BiogeographicRegion = col_character(),
+                                            Country = col_character(),
+                                            Adm1 = col_character(),
+                                            Adm2 = col_character(),
+                                            Region = col_character(),
+                                            Locale = col_character(),
+                                            LocalityNotes = col_character(),
+                                            Lat = col_character(),
+                                            Lon = col_character(),
+                                            LatLonMaxError = col_character(),
+                                            Datum = col_character(),
+                                            Elevation = col_character(),
+                                            ElevationMaxError = col_character(),
+                                            DateCollectedStart = col_date(format = ""),
+                                            DateCollectedEnd = col_date(format = ""),
+                                            Habitat = col_character(),
+                                            Microhabitat = col_character(),
+                                            Method = col_character(),
+                                            Medium = col_character(),
+                                            CollectedBy = col_character(),
+                                            CollectionNotes = col_character(),
+                                            LocalityCode = col_character()
+                           )
+  )
+  return(sc.db)
+}
+
+
+#' Read Label Inbox tsv
+#' This function reads in a tsv in the standard
+#' Cal Academy Specimen data format with correct
+#' data types assigned
+#' @param specimenDBFilePath a tsv file in standard Cal Academy Specimen Code Format
+#' @return a data frame file in standard Cal Academy Specimen Code Format
+#' @export
+read_label_inbox <- function(specimenDBFilePath){
+  label.inbox <- readr::read_tsv(specimenDBFilePath,
+                           col_types = cols(Code = col_character(),
+                                            Class = col_character(),
+                                            Order = col_character(),
+                                            Family = col_character(),
+                                            Subfamily = col_character(),
+                                            Genus = col_character(),
+                                            Species = col_character(),
+                                            LifeStageSex = col_character(),
+                                            DeterminedBy = col_character(),
+                                            DateDetermined = col_date(format = ""),
+                                            TypeStatus = col_character(),
+                                            SpecimenNotes = col_character(),
+                                            DNANotes = col_character(),
+                                            LocatedAt = col_character(),
+                                            OwnedBy = col_character(),
+                                            BiogeographicRegion = col_character(),
+                                            Country = col_character(),
+                                            Adm1 = col_character(),
+                                            Adm2 = col_character(),
+                                            Region = col_character(),
+                                            Locale = col_character(),
+                                            LocalityNotes = col_character(),
+                                            Lat = col_character(),
+                                            Lon = col_character(),
+                                            LatLonMaxError = col_character(),
+                                            Datum = col_character(),
+                                            Elevation = col_character(),
+                                            ElevationMaxError = col_character(),
+                                            DateCollectedStart = col_date(format = ""),
+                                            DateCollectedEnd = col_date(format = ""),
+                                            Habitat = col_character(),
+                                            Microhabitat = col_character(),
+                                            Method = col_character(),
+                                            Medium = col_character(),
+                                            CollectedBy = col_character(),
+                                            CollectionNotes = col_character(),
+                                            LocalityCode = col_character()
+                           )
+  )
+  return(label.inbox)
+}
+
+
+#' pseudo-relational database update for CASENT collection and specimen code databases
+#' PSEUDO RELATIONAL DATABASE: OVERWRITE DISCREPANCIES IN SPECIMEN CODE DATABASE CC.DB -> SC.DB
+#' @param sc.db Specimen code database in CASENT format
+#' @param cc.db Collection code database in CASENT format
+#' @return an updated specimen database
+#' @export
+update_sc_from_cc <- function(sc.db, cc.db){
+
+  # check if sc.db is in unparsed state so it can be return as such
+  is.unparsed <- all(!names(sc.db) %in% "BaseCode")
+
+  # make sure base and sub codes are parsed
+  sc.db %<>% parse_codes()
+  cc.db %<>% parse_codes()
+
+  # pull sc.db specific columns that won't be overwritten
+  sc.db.untouched <- sc.db %>% select(SpecimenCode, BaseCode, SubCode, Class, Order, Family, Subfamily, Genus, Species, LifeStageSex, DeterminedBy,
+                                      DateDetermined, TypeStatus, SpecimenNotes, LocatedAt, OwnedBy, DNANotes, Medium)
+
+  # pull out columns from cc.db that will overwrite those from sc.db
+  cc.db.overwrite <- cc.db %>% select(BaseCode, BiogeographicRegion, Country, Adm1, Adm2, Region, Locale, LocalityNotes, Lat, Lon, LatLonMaxError,
+                                      Datum, Elevation, ElevationMaxError, DateCollectedStart, DateCollectedEnd, Habitat, Microhabitat,
+                                      Method, CollectedBy, CollectionNotes, LocalityCode)
+  sc.db.new <- sc.db.untouched %>%
+    left_join(cc.db.overwrite, by = 'BaseCode')
+  # restore column order
+  sc.db.new <- bind_rows(sc.db[0,], sc.db.new)
+  sc.db.new <- arrange(sc.db.new, SpecimenCode)
+
+  # return sc.db to deparsed state if it was originally so
+  if(is.unparsed){
+    sc.db.new %<>% deparse_codes()
+    cc.db %<>% deparse_codes()
+  }
+
+  return(sc.db.new)
+}
+
+
+
+#' Locality Code Lookup
+#' This function reads locality codes and imports locality names
+#' from the locality code dictionary for collection code records.
+#' It ignores records that have no locality code entered.
+#' @param df a data frame in standard Cal Academy Collection Code Format
+#' @param loc.key a data frame file in standard Cal Academy Collection Code Format
+#' @return a data frame with updated locality information
+#' @export
+add_loc_info <- function(df, loc.key){
+  locC.is.na <- df[is.na(df$LocalityCode),]
+  locC.is.not.na <- df[!is.na(df$LocalityCode),]
+
+  # only removing columns when they exist makes this function agnostic to different database styles (i.e. critter club and insect collection)
+  # these columns will be added back in with the join
+  if('Region' %in% colnames(locC.is.not.na)){locC.is.not.na$Region <- NULL}
+  if('Locale' %in% colnames(locC.is.not.na)){locC.is.not.na$Locale <- NULL}
+  if('Lat' %in% colnames(locC.is.not.na)){locC.is.not.na$Lat <- NULL}
+  if('Lon' %in% colnames(locC.is.not.na)){locC.is.not.na$Lon <- NULL}
+  if('LatLonMaxError_meters' %in% colnames(locC.is.not.na)){locC.is.not.na$LatLonMaxError_meters <- NULL}
+  if('LatLonMaxError' %in% colnames(locC.is.not.na)){locC.is.not.na$LatLonMaxError <- NULL}
+  if('Habitat' %in% colnames(df)){locC.is.not.na$Habitat <- NULL}
+
+  # convert data types to character to match loc.key format
+  locC.is.not.na$LocalityCode <- as.character(locC.is.not.na$LocalityCode)
+
+
+  # create the join
+  locC.is.not.na <- left_join(locC.is.not.na, loc.key, by = 'LocalityCode')
+
+  # put data frame back together
+  df <- bind_rows(locC.is.na, locC.is.not.na)
+
+
+
+  str(locC.is.not.na)
+  str(locC.is.na)
+  names(locC.is.not.na)
+  names(locC.is.na)
+
+  # sort by collection code (if that column exists)
+  if('CollectionCode' %in% colnames(df)){df <- arrange(df, CollectionCode)}
+  return(df)
+}
+
+
+#' splits up an insect collection dataframe's (collection or specimen dataframe) code column
+#' into constituent parts: base code number and subcode (if present).
+#' used to match specimen codes with their parent collection codes efficiently
+#' @param df Either a collection code or speciment code database in CASENT format
+#' @return an updated database
+#' @export
+parse_codes <- function(df){
+  # check if data frame is a collection code dataframe
+  if(any(names(df) %in% "CollectionCode")){
+  df$BaseCode <- as.numeric(str_match(df$CollectionCode, '\\w+#(\\d+)')[,2])
+  df$SubCode <- as.numeric(str_match(df$CollectionCode, '\\w+#(\\d+)-(\\d+)')[,3])
+  }
+  # check if data frame is a specimen code dataframe
+  if(any(names(df) %in% "SpecimenCode")){
+  df$BaseCode <- as.numeric(str_match(df$SpecimenCode, '\\w+#(\\d+)')[,2])
+  df$SubCode <- as.numeric(str_match(df$SpecimenCode, '\\w+#(\\d+)-(\\d+)')[,3])
+  }
+  # check if data frame is a label.inbox dataframe
+  if(any(names(df) %in% "Code")){
+    df$BaseCode <- as.numeric(str_match(df$Code, '\\w+#(\\d+)')[,2])
+    df$SubCode <- as.numeric(str_match(df$Code, '\\w+#(\\d+)-(\\d+)')[,3])
+  }
+  return(df)
+}
+
+
+
+#' removes the base and subcode columns that the function parse codes adds
+#' @param df Either a collection code or speciment code database in CASENT format
+#' @return an updated database
+#' @export
+deparse_codes <- function(df){
+  df$BaseCode <- NULL
+  df$SubCode <- NULL
+  return(df)
+}
+
+
+
+
+
+
+#' Checks for missing data in key collection fields
+#' This function takes a standard critter club data frame
+#' and checks for blanks in missing fields
+#' @param df standard Cal Academy Insect Dataframe for writing insect labels
+#' @export
+check_empty <- function(df){
+  cols.to.check <- df[,c("Country", "Adm1", "Adm2", "Lat", "Lon", "Locale", "DateCollectedStart", "Elevation", "CollectedBy")]
+  # send warnings for missing label data
+  cat(paste0("checking for missing critical data in labels\n"))
+  for(i in names(cols.to.check)){
+    len <- sum((is.na(cols.to.check[[i]])), na.rm = TRUE)
+    if(len > 0) print(paste0("warning! the ", i, " column is missing ", len, " values"))
+  }
+  if(any(is.na(cols.to.check))){ # give user the choice to stop if any of the above reported fields are missing
+    answer <- readline(paste0("fields are empty! are you sure you want to continue? (y/n)"))
+    if(answer!="y" & answer!="y"){
+      cat(paste0("program terminated- fill in missing fields and rerun script"))
+      stop()
+    }
+  }
+  cat(paste0("continuing...\n"))
+}
+
+
+
+
+
+#' Reads in gpx files recursively from a designated path and assembles and formats one exhuative dataframe with just location
+#' and time stamps sorted in order of occurence
+#' @param path a path to parent folder where gpx files occur
+#' @return a data frame of coords and time stamps for all gpx files specified
+#' @export
+munge_gpx <- function(path){
+  # grab all gpx files recursively from the specified parent folder
+  gpx.files <- list.files(path = path, pattern = "\\.gpx$", recursive = T, full.names=TRUE)
+
+  # run lapply to read in all gpx files and htmlTreeParse to pull out timestamp info and genarate a list of individual dataframes
+  # corresponding to each gpx file.
+  ldf <- lapply(gpx.files, function(file){
+    pfile <- XML::htmlTreeParse(file = file, error = function(...) {}, useInternalNodes = T)
+    elevations <- as.numeric(xpathSApply(pfile, path = "//trkpt/ele", xmlValue))
+    times <- XML::xpathSApply(pfile, path = "//trkpt/time", xmlValue)
+    coords <- XML::xpathSApply(pfile, path = "//trkpt", xmlAttrs)
+    lats <- as.numeric(coords["lat",])
+    lons <- as.numeric(coords["lon",])
+    df <- data.frame(Lat = lats, Lon = lons, Elevation = elevations, DateTime = times)
+    rm(list=c("elevations", "lats", "lons", "pfile", "times", "coords"))
+    return(df)
+  }
+  )
+  # combine all dataframes to one big master coordinate dataframe of all gpx trails
+  all.coords <- data.table::rbindlist(ldf) # I used this rather than a dplyr solution because it's faster
+  all.coords$DateTime %<>% lubridate::ymd_hms() # fix date formatting
+  all.coords %<>% dplyr::arrange(DateTime)
+  return(all.coords)
+}
+
+
+#' this function filters out records based on time difference between observations
+# it assumes the data is sorted first by a unique id vector and then by ascending date/time
+#' @param obs observation database in standard critter club format
+#' @export
+filter_time_diff <- function(obs, ind = 1) {
+  ind.next <- first(which(difftime(obs, obs[ind], units = "hours") > 1))
+  if (is.na(ind.next))
+    return(ind)
+  else
+    return(c(ind, filter_time_diff(obs, ind.next)))
+}
+
+
+
+
+
+#' Checks that all genera listed in a set of observations occurs in the specified key or checklist
+#' @param obs observation databse in standard critter club format
+#' @param key key or checklist in standard critter club format
+#' @export
+find_bad_G <- function(obs, key){
+  noGMatch <- obs[!obs$Genus %in% key$Genus,]
+  if(nrow(noGMatch) > 0){
+    cat(paste0('\nWarning there are genera in observations that are not in your key or checklist!\n'))
+    cat(paste0("The genus ", noGMatch$Genus, " from observation data can't be found\n"))
+  }
+}
+
+
+
+
+##### PROCESSING AND WRITING LABELS #####
+
+#' Add proper abbreviations, spacing, and punction for insect labels
+#' This function takes a label inbox object and writes
+#' appropriate label format in text file to serve as input
+#' for latex'
+#' @param label.inbox standard Cal Academy Insect Dataframe for writing insect labels
+#' @return an edited dataframe in preparation for inputing to LaTeX
+#' @export
+clean_ent_label <- function(label.inbox){
+
+  cat(paste0("Starting label formatting...\n"))
+
+  # convert dates to insect label dates
+  label.inbox$DatesCollected <- ento_dates(label.inbox$DateCollectedStart, label.inbox$DateCollectedEnd)
+
+  # 2ND ADMIN DISTRICT FORMATTING BY COUNTRY — DON'T USE!
+  # this code needs to be converted to a case_when mutate as it is flawed (but I no longer need it for now as I don't use county in my labels
+  # label.inbox$Adm2 <- ifelse(label.inbox$Country == "USA" & !is.na(label.inbox$Country) & !is.na(label.inbox$Adm2), paste0(label.inbox$Adm2," Co., "), "")
+  # label.inbox$Adm2 <- ifelse(label.inbox$Country == "Mexico" & !is.na(label.inbox$Country) & !is.na(label.inbox$Adm2), paste0("Mun. de ",label.inbox$Adm2,", "), "")
+  # label.inbox$Adm2 <- ifelse(label.inbox$Country == "Canada" & !is.na(label.inbox$Country) & !is.na(label.inbox$Adm2), paste0(label.inbox$Adm2," Reg. Dist., "), "")
+
+  # COLLECTION LABEL CLEANUP SECTION
+  label.inbox$Country <- ifelse(!is.na(label.inbox$Country), paste0(label.inbox$Country,": "), "")
+  label.inbox$Adm1 <- ifelse(!is.na(label.inbox$Adm1), paste0(label.inbox$Adm1,": "), "")
+
+  label.inbox$Lat <- ifelse(!is.na(label.inbox$Lat), paste0(label.inbox$Lat,"° "), "")
+  label.inbox$Lon <- ifelse(!is.na(label.inbox$Lon), paste0(label.inbox$Lon,"° "), "")
+  label.inbox$Lat <- gsub("-", "\\\\char\"2212 ", label.inbox$Lat) # convert hyphen to true minus sign for latex
+  label.inbox$Lon <- gsub("-", "\\\\char\"2212 ", label.inbox$Lon) # convert hyphen to true minus sign for latex
+
+  label.inbox$Elevation <- ifelse(!is.na(label.inbox$Elevation), paste0(label.inbox$Elevation,"m "), "")
+
+  label.inbox$DatesCollected <- ifelse(!is.na(label.inbox$DatesCollected), paste0(label.inbox$DatesCollected," "), label.inbox$DatesCollected)
+  label.inbox$Habitat <- ifelse(!is.na(label.inbox$Habitat), paste0(label.inbox$Habitat,", "), "")
+
+  # turn NA's in Method and Microhabitat to blanks
+  label.inbox$Method <- ifelse(!is.na(label.inbox$Method), paste0(label.inbox$Method), "")
+  label.inbox$Microhabitat <- ifelse(!is.na(label.inbox$Microhabitat), paste0(label.inbox$Microhabitat), "")
+
+  # Combine Region and Locale
+  label.inbox$Place <- ifelse(is.na(label.inbox$Region), paste0(label.inbox$Locale, ". "), paste0(label.inbox$Region,", ",label.inbox$Locale, ". "))
+
+  # Go back to just using Locale for an entry if Locale + Region passes a specified length
+  # This is to dial in to avoid spilling onto a 6th line on the latex labels
+  place.char.limit <- 35
+  label.inbox$Place <- ifelse(nchar(label.inbox$Place) > place.char.limit,
+                              paste0(label.inbox$Locale, ". "),
+                              label.inbox$Place
+                              )
+
+  # Customize which types of Methods and Microhabitats go onto the label
+  label.inbox$Method[label.inbox$Method == "hand"] <- "" # remove hand collecting method so it doesn't go on labels
+  label.inbox$Method[label.inbox$Method == "net"] <- "" # remove net collecting method so it doesn't go on labels
+
+  label.inbox %<>% mutate(Method_Micro = case_when(
+    label.inbox$Method != "" & label.inbox$Microhabitat != "" ~ paste0(label.inbox$Method,", ",label.inbox$Microhabitat, ". "),
+    label.inbox$Method != "" & label.inbox$Microhabitat == "" ~ paste0(label.inbox$Method,". "),
+    label.inbox$Method == "" & label.inbox$Microhabitat != "" ~ paste0(label.inbox$Microhabitat,". "),
+    label.inbox$Method == "" & label.inbox$Microhabitat == "" ~ paste0(label.inbox$Microhabitat,"")
+    )
+    )
+
+
+  # STANDARD ABBREVIATIONS FOR LABELS (THINGS THAT I DON'T WANT CHANGED ON THE ORIGINAL RECORDS BUT DO WANT CHANGED FOR LABELS
+
+  label.inbox$Country <- gsub("Mexico", "MEX", label.inbox$Country) # based on ISO standardized nation 3-letter abbreviations
+  label.inbox$Country <- gsub("Canada", "CAN", label.inbox$Country) # based on ISO standardized nation 3-letter abbreviations
+  label.inbox$Country <- gsub("Argentina", "ARG", label.inbox$Country) # based on ISO standardized nation 3-letter abbreviations
+  label.inbox$Country <- gsub("United States of America", "USA", label.inbox$Country) # based on ISO standardized nation 3-letter abbreviations
+  label.inbox$Country <- gsub("Falkland Islands", "FLK", label.inbox$Country) # based on ISO standardized nation 3-letter abbreviations
+
+  label.inbox$Adm1 <- gsub2(state.name, state.abb, label.inbox$Adm1)
+  label.inbox$Adm1 <- gsub("Baja California Norte", "BCN", label.inbox$Adm1)
+  label.inbox$Adm1 <- gsub("Baja California Sur", "BCS", label.inbox$Adm1)
+  label.inbox$Adm1 <- gsub("Catamarca", "CT", label.inbox$Adm1)
+  label.inbox$Adm1 <- gsub("La Rioja", "LR", label.inbox$Adm1)
+  label.inbox$Adm1 <- gsub("Sonora", "SON", label.inbox$Adm1)
+  label.inbox$Adm1 <- gsub("British Columbia", "BC", label.inbox$Adm1)
+
+  label.inbox$Place <- gsub("kilometers", "km", label.inbox$Place)
+  label.inbox$Place <- gsub("National Forest", "Natl. For.", label.inbox$Place)
+  label.inbox$Place <- gsub("National Monument", "Natl. Mon.", label.inbox$Place)
+  label.inbox$Place <- gsub("National Park", "Natl. Pk.", label.inbox$Place)
+  label.inbox$Place <- gsub("Recreation Area", "Rec. Area", label.inbox$Place)
+  label.inbox$Place <- gsub("Recreation ", "Rec. ", label.inbox$Place)
+  label.inbox$Place <- gsub("National Conservation Area", "Natl. Cons. Area.", label.inbox$Place)
+  label.inbox$Place <- gsub("Wilderness Area", "Wldrns.", label.inbox$Place)
+  label.inbox$Place <- gsub("Fort//s", "Ft.", label.inbox$Place)
+  label.inbox$Place <- gsub("Southwestern Research Station", "SW Research Stn.", label.inbox$Place)
+  label.inbox$Place <- gsub("University", "Univ.", label.inbox$Place)
+  label.inbox$Place <- gsub("South Fork", "S. Fork", label.inbox$Place)
+
+  label.inbox$Place <- gsub("National", "Natl.", label.inbox$Place)
+  label.inbox$Place <- gsub("Center", "Cen.", label.inbox$Place)
+
+  label.inbox$Place <- gsub("\\snorth\\s", " N ", label.inbox$Place)
+  label.inbox$Place <- gsub("\\ssouth\\s", " S ", label.inbox$Place)
+  label.inbox$Place <- gsub("\\seast\\s", " E ", label.inbox$Place)
+  label.inbox$Place <- gsub("\\swest\\s", " W ", label.inbox$Place)
+
+  label.inbox$Place <- gsub("\\sMountains", " Mts.", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sMountain", " Mt.", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sCanyon", " Cyn.", label.inbox$Place, ignore.case = TRUE)
+
+  label.inbox$Place <- gsub("\\sRoad", " Rd.", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sStreet", " St.", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sRoute", " Rte.", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sAvenue", " Ave.", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sBoulevard", " Blvd.", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sHighway", " Hwy.", label.inbox$Place)
+  label.inbox$Place <- gsub("\\sTrail[ \\.\\,]", " Trl. ", label.inbox$Place)
+
+  label.inbox$Place <- gsub("\\sdegrees\\s", "° ", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sand\\s", " & ", label.inbox$Place)
+
+  # other misc. substitutions
+  label.inbox$Method <- gsub("hand\\\aspirator", " hand", label.inbox$Method, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sSprings Campground", " Spgs. Campground", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("\\sSpring Campground", " Spg. Campground", label.inbox$Place, ignore.case = TRUE)
+  label.inbox$Place <- gsub("Campground", "Campgrnd.", label.inbox$Place, ignore.case = TRUE)
+
+  # get rid of double periods caused by abbreviations at the end of a sentence
+  label.inbox$Place <- gsub("\\.\\.", ".", label.inbox$Place)
+  label.inbox$Place <- gsub("\\s\\,", ",", label.inbox$Place)
+  label.inbox$Place <- gsub("\\s\\.", ".", label.inbox$Place)
+  label.inbox$Method_Micro <- gsub("\\.\\.", ".", label.inbox$Method_Micro)
+
+  # format Collection Code for label
+  label.inbox$Code <- gsub("RPO#", "", label.inbox$Code) # remove prefix to Collection Code
+  label.inbox$Code <- gsub("-\\d+", "", label.inbox$Code) # temporarily remove hyphen and subcode to avoid formatting problems
+  # add leading zeros with formatC
+  label.inbox$Code <- ifelse(!is.na(label.inbox$Code),
+                             paste0("RPOverson# ", formatC(label.inbox$Code, width=4, format="d", flag="")),
+                             label.inbox$Code)
+  # add sub codes back after formating leading zeros with formatC
+  label.inbox$Code <- ifelse(!is.na(label.inbox$SubCode),
+                             paste0(label.inbox$Code, "-", label.inbox$SubCode),
+                             label.inbox$Code
+  )
+  final <- label.inbox[,c("Code", "Country", "Adm1", "Adm2", "Locale", "DatesCollected",
+                          "Lat", "Lon", "Elevation", "CollectedBy", "Habitat", "Microhabitat", "Method", "Medium")]
+  final <- final[with(final, order(Code)),]
+  return(label.inbox)
+}
+
+
+#' Write insect labels
+#' This function takes a label inbox tsv file and writes
+#' appropriate label format in text file to serve as input
+#' for latex to build insect labels
+#' @param label.inbox standard Cal Academy Insect Dataframe for writing insect labels
+#' @return A text output readable by latex
+#' @export
+write_latex_labels <- function(label.inbox){
+  # check that collection code input has at least one row
+  if(nrow(label.inbox) < 1){
+    cat(paste0("no collection codes found in label input\n"))
+    stop()
+  }
+
+  # make a test dataframe of most crucial columns to check for missing values before function runs
+  check_empty(label.inbox)
+
+  # abbreviate text for label formatting and other changes
+  label.inbox <- clean_ent_label(label.inbox)
+
+  # writing data to latex data files #
+  # add remark instructions to characters with special meaning for latex before writing to latex input datafile
+  label.inbox <- as.data.frame(lapply(label.inbox,function(x) if(is.character(x)|is.factor(x)) gsub("\\&","\\\\&",x) else x))
+  label.inbox <- as.data.frame(lapply(label.inbox,function(x) if(is.character(x)|is.factor(x)) gsub("\\%","\\\\%",x) else x))
+  label.inbox <- as.data.frame(lapply(label.inbox,function(x) if(is.character(x)|is.factor(x)) gsub("\\$","\\\\$",x) else x))
+  label.inbox <- as.data.frame(lapply(label.inbox,function(x) if(is.character(x)|is.factor(x)) gsub("\\#","\\\\#",x) else x))
+  label.inbox <- as.data.frame(lapply(label.inbox,function(x) if(is.character(x)|is.factor(x)) gsub("\\_","\\\\_",x) else x))
+
+  label.inbox <- label.inbox[with(label.inbox, order(Code)),] # sort cc_new
+
+  # start label processing
+
+  cat(paste0("starting label writing process to latex_label_input.txt\n\n"))
+  # export collection label info to a text document
+  counter <<- 0
+  file.path <- paste0('./labels/latex/latex_label_input.txt')
+  if (file.exists(file.path)){
+    file.remove(file.path)
+  }
+  for(i in 1:nrow(label.inbox)){
+    sink(file.path, append = TRUE)
+    cat(paste0("\\insectlabel{\\textbf{", label.inbox$Country[i], label.inbox$Adm1[i], "}", label.inbox$Place[i], label.inbox$Lat[i], label.inbox$Lon[i], label.inbox$Elevation[i], label.inbox$DatesCollected[i], label.inbox$Method_micro[i], label.inbox$Code[i], "}\\"))
+    cat(paste0("\n"))
+    cat(paste0("\n"))
+    sink()
+    counter <<- counter + 1
+  }
+
+  # run xelatex command to produce labels
+  # working directory has to be set as such or xelatex will add auxilary files to the wrong path
+  setwd('./labels/latex/')
+  system('xelatex insect_label.tex')
+  setwd('../../')
+}
+
+
+
+
+
+
+
+
+##### OTHER FUNCTIONS #####
+
+
+
+
+
+
+#' Convert to standard insect dates for labels
+#' @param date_vector_start a vector of start dates
+#' @param date_vector_end a vector of end dates
+#' @return a dataframe column of date or date range that collection took place
+#' @export
+ento_dates <- function(date_vector_start, date_vector_end){
+  # format with lubridate package
+  ifelse(any(!is.na(date_vector_end)),
+         df <- data.frame(DateCollectedStart = lubridate::ymd(date_vector_start), DateCollectedEnd = lubridate::ymd(date_vector_end)),
+         df <- data.frame(DateCollectedStart = lubridate::ymd(date_vector_start), DateCollectedEnd = NA)
+  )
+
+
+  # parse out year, month, day with lubridate
+  df$years <- year(df$DateCollectedStart)
+  df$months <- month(df$DateCollectedStart)
+  df$days <- day(df$DateCollectedStart)
+  df$yeare <- year(df$DateCollectedEnd)
+  df$monthe <- month(df$DateCollectedEnd)
+  df$daye <- day(df$DateCollectedEnd)
+
+  # substitute a list of month numbers for a list of roman numerals
+  from <- c('10','11','12','1','2','3','4','5','6','7','8','9')
+  to <- c('x','xi','xii','i','ii','iii','iv','v','vi', 'vii','viii','ix')
+  df$months <- gsub2(from, to, df$months)
+  df$monthe <- gsub2(from, to, df$monthe)
+
+  # records with start but no end date
+  df_noe <- df[!is.na(df$DateCollectedStart) & is.na(df$DateCollectedEnd),]
+  if(nrow(df_noe) > 0){
+    df_noe$DatesCollected <- paste0(df_noe$days,".",df_noe$months,".",df_noe$years)
+  }
+
+  # records with start and end date
+  df_e <- df[!is.na(df$DateCollectedEnd),]
+  if(nrow(df_e) > 0){
+    df_e$DatesCollected <- ifelse(df_e$months == df_e$monthe,
+                                  paste0(df_e$days,"–",df_e$daye,".",df_e$months,".",df_e$years),
+                                  paste0(df_e$days,"–",df_e$daye,".",df_e$months,"–",df_e$monthe,".", df_e$years)
+    )
+  }
+
+  # record's with no dates
+  df_nod <- df[is.na(df$DateCollectedStart),]
+  if(nrow(df_nod) > 0){
+    df_nod$DatesCollected <- paste0("(no date)")
+  }
+
+  # combine date types back to one dataframe
+  df <- rbind(df_noe, df_e, df_nod)
+
+  # extract date vector
+  return(df$DatesCollected)
+}
+
+
+
+
+#' this function receives collection code records in standard format
+#' and splits them into specimen code records based on user input and then
+#' adds them to the specimen code master database
+#' @param cc.records a dataframe of collection codes
+#' @param sc.db a specimen database
+#' @return split specimen records
+#' @export
+split_cc_code <- function(cc.records, sc.db){
+  template.sc <- sc.db[0,] # make template from specimen code database
+
+  if(nrow(cc.records) > 0){ # check that collection code input has at least one row and if not, end
+
+    scCount <- rep(NA, nrow(cc.records)) # generate blank list equaling number of needed counts
+    cat(paste0("User input required for the following multi-specimen collections codes:"))
+
+    for(i in 1:nrow(cc.records)){ # generate specimen counts in a for loop while querying user
+      scCount[i] <- readline(paste0('How many PINNED specimen codes to generate for collection code: \"', cc.records$CollectionCode[i],
+                                    ', ', cc.records$Region[i], ', ', cc.records$Locale[i],'\"? '))
+      scCount <<- as.numeric(scCount)
+    }
+    cc.records <- cc.records[scCount != 0,] # remove cc.records where 0 was entered
+    scCount <- scCount[scCount != 0] # remove from scCount where 0 was entered
+    cc.records$SplitCount <- as.numeric(scCount)
+    cc.records <- cc.records %>% select(SplitCount, everything()) # move focal columns to the front
+
+    last.sc <- find_max_sc(ccode, sc.db) # find the last used specimen code to avoid duplication
+
+    # if this is the first time a collection code has been split then the original code in the sc.db
+    # that is not hyphenated needs to have a "-1" added onto it, and a label should be printed for it as well
+    if(last.sc == 1){
+      sc.db.match <- str_extract(sc.db$SpecimenCode, "\\d+") %>% as.integer() %in% ccode
+      sc.db[sc.db.match,]$SpecimenCode <- paste0(sc.db[sc.db.match,]$SpecimenCode, "-1")
+    }
+
+    # expand collection code database to create new specimen code records
+    cc.records.exp <- cc.records %>%
+      dplyr::group_by(CollectionCode) %>%
+      expand(Count = seq(1:SplitCount)) %>%
+      dplyr::left_join(cc.records, by = 'CollectionCode') %>%
+      dplyr::mutate(Count = Count + last.sc) %>%
+      dplyr::mutate(SpecimenCodeTemp = case_when(last.sc > 0 ~ paste(CollectionCode, Count, sep = '-'),
+                                                 last.sc == 0 ~ CollectionCode)) %>%
+      ungroup() %>%
+      dplyr::select(-CollectionCode, -SplitCount, -Count, SpecimenCodeTemp) %>%
+      dplyr::rename(SpecimenCode = SpecimenCodeTemp)
+
+    # bind duplicated collection code rows to the specimen code database template
+    new.sc.records <- dplyr::bind_rows(template.sc, cc.records.exp)
+    new.sc.records <- new.sc.records %>% dplyr::select(names(template.sc))
+    return(new.sc.records)
+  } else{cat(paste0("No collection codes found!\n"))
+  }
+}
+
+
+
+
+
+
+
+
+
+
+#' reverse geocode function. This function takes a standard Cal Academy
+#' database and uses the lat lon columns to add additional reverse
+#' geocoded information if it is not already filled in.
+#' @param df a standard Cal Academy Insect Database format for insect labels
+#' @export
+#' @return returns a database with reverse geocoded fields
+rev_geocode <- function(df){
+  cat(paste0("Starting reverse geocoding\n"))
+
+  df$Lat_bk <- df$Lat  # make backup of Lat Lon formatting
+  df$Lon_bk <- df$Lon
+
+  # CONVERT LAT/LON TO NUMERIC
+  df$Lat <- as.numeric(df$Lat)
+  df$Lon <- as.numeric(df$Lon)
+
+  df.coords <- df[!is.na(df$Lat),] # remove rows that have no coordinates
+  df.no.coords <- df[is.na(df$Lat),] # remove rows that have no coordinates (no further processing on these records)
+
+  # turn my data frame into a Spatial Point object and project to WGS84
+  coords <- as.data.frame(cbind(Lon = df.coords$Lon,Lat = df.coords$Lat))
+  points <- coords
+  sp::coordinates(points) <- ~Lon + Lat
+  df.spdf <- sp::SpatialPointsDataFrame(points, df.coords)
+  sp::proj4string(df.spdf) <- sp::CRS("+proj=longlat +ellps=WGS84")
+  df.spdf <- sp::spTransform(df.spdf, sp::CRS("+proj=longlat +ellps=WGS84"))
+
+  # read in boundary shape files and project to WGS84
+  # define paths
+  shape.file.path <- "./data_supplement/shape_files"
+  shape.file.path.mex <- "./data_supplement/shape_files/Mexico"
+  shape.file.path.arg <- "./data_supplement/shape_files/Argentina"
+  # read in
+  countries <- rgdal::readOGR(dsn=shape.file.path, layer="ne_110m_admin_0_countries")
+  countries <- sp::spTransform(countries, sp::CRS("+proj=longlat +ellps=WGS84"))
+  states <- rgdal::readOGR(dsn=shape.file.path, layer="ne_110m_admin_1_states_provinces_shp")
+  states <- sp::spTransform(states, sp::CRS("+proj=longlat +ellps=WGS84"))
+  counties <- rgdal::readOGR(dsn=shape.file.path, layer="cb_2013_us_county_500k")
+  counties <- sp::spTransform(counties, sp::CRS("+proj=longlat +ellps=WGS84"))
+  natparks <- rgdal::readOGR(dsn=shape.file.path, layer="ne_10m_parks_and_protected_lands_area")
+  natparks <- sp::spTransform(natparks, sp::CRS("+proj=longlat +ellps=WGS84"))
+  natforests <- rgdal::readOGR(dsn=shape.file.path, layer="S_USA.NFSLandUnit")
+  natforests <- sp::spTransform(natforests, sp::CRS("+proj=longlat +ellps=WGS84"))
+  # cities <- rgdal::readOGR(dsn=shape.file.path, layer="cities_dtl")
+  # cities <- sp::spTransform(cities, sp::CRS("+proj=longlat +ellps=WGS84"))
+
+  # bring data from shapefile polygons to my spatial points dataframe where they intersect
+  # i.e. intersect points in newly converted spatial dataframe with polygons and add polygon IDS to pts@data.
+  # the mutate_if commands are necessary to de-factorize the queried data otherwise factor levels are pasted below
+  # into my data frame rather than the names of regions
+  countries.query <- sp::over(df.spdf, countries[,c("ABBREV","CONTINENT")]) %>% mutate_if(is.factor, as.character)
+  states.query <- sp::over(df.spdf, states[,"name"]) %>% mutate_if(is.factor, as.character)
+  counties.query <- sp::over(df.spdf, counties[,"NAME"]) %>% mutate_if(is.factor, as.character)
+  natparks.query <- sp::over(df.spdf, natparks[,"unit_name"]) %>% mutate_if(is.factor, as.character)
+  natforests.query <- sp::over(df.spdf, natforests[,"NFSLANDU_2"]) %>% mutate_if(is.factor, as.character)
+  # cities.query <- sp::over(df.spdf, cities[,"NAME"]) %>% mutate_if(is.factor, as.character)
+  # overwrite fields with reverse geocoded data only if reverse geocode data is not blank
+  df.coords$BiogeographicRegion <- ifelse(!is.na(countries.query$CONTINENT), countries.query$CONTINENT, df.coords$BiogeographicRegion)
+  df.coords$Country <- ifelse(!is.na(countries.query$ABBREV), countries.query$ABBREV, df.coords$Country)
+  df.coords$Adm1 <- ifelse(!is.na(states.query$name), states.query$name, df.coords$Adm1)
+  df.coords$Adm2 <- ifelse(!is.na(counties.query$NAME), counties.query$NAME, df.coords$Adm2)
+  # cities <- cities.query$NAME
+  # Sequentially fill in any blanks in the REGION Column from two different sources prioritizing the first source
+  df.coords$Region <- ifelse(is.na(df.coords$Region), natparks.query$unit_name, df.coords$Region)
+  df.coords$Region <- ifelse(is.na(df.coords$Region), natforests.query$NFSLANDU_2, df.coords$Region)
+
+  # Load and add in Mexico data only if there are still blanks from the above US shapefiles to save time
+  if(any(is.na(df.coords$Adm1))){
+    # read in Mexico
+    mex.adm1 <- rgdal::readOGR(dsn=shape.file.path.mex, layer="dest_2010gw")
+    mex.adm1 <- sp::spTransform(mex.adm1, sp::CRS("+proj=longlat +ellps=WGS84"))
+    mex.adm2 <- rgdal::readOGR(dsn=shape.file.path.mex, layer="Muni_2012gw")
+    mex.adm2 <- sp::spTransform(mex.adm2, sp::CRS("+proj=longlat +ellps=WGS84"))
+    # bring data from shapefile polygons to my spatial points dataframe where they intersect for Mexico
+    mex.adm1.query <- sp::over(df.spdf, mex.adm1[,"ENTIDAD"]) %>% mutate_if(is.factor, as.character)
+    mex.adm2.query <- sp::over(df.spdf, mex.adm2[,"NOM_MUN"]) %>% mutate_if(is.factor, as.character)
+    # overwrite fields with reverse geocoded data only if reverse geocode data is not blank for Mexico
+    df.coords$Adm1 <- ifelse(!is.na(mex.adm1.query$ENTIDAD), mex.adm1.query$ENTIDAD, df.coords$Adm1)
+    df.coords$Adm2 <- ifelse(!is.na(mex.adm2.query$NOM_MUN), mex.adm2.query$NOM_MUN, df.coords$Adm2)
+  }
+
+  # Load and add in Argentina data only if there are still blanks from the above shapefiles to save time
+  if(any(is.na(df.coords$Adm1))){
+    # read in Argentina
+    arg.adm1 <- rgdal::readOGR(dsn=shape.file.path.arg, layer="ARG_adm1")
+    arg.adm1 <- sp::spTransform(arg.adm1, sp::CRS("+proj=longlat +ellps=WGS84"))
+    arg.adm2 <- rgdal::readOGR(dsn=shape.file.path.arg, layer="ARG_adm2")
+    arg.adm2 <- sp::spTransform(arg.adm2, sp::CRS("+proj=longlat +ellps=WGS84"))
+    # bring data from shapefile polygons to my spatial points dataframe where they intersect for Argentina
+    arg.adm1.query <- sp::over(df.spdf, arg.adm1[,"NAME_1"]) %>% mutate_if(is.factor, as.character)
+    arg.adm2.query <- sp::over(df.spdf, arg.adm2[,"NAME_2"]) %>% mutate_if(is.factor, as.character)
+    # overwrite fields with reverse geocoded data only if reverse geocode data is not blank for Argentina
+    df.coords$Adm1 <- ifelse(!is.na(arg.adm1.query$NAME_1), arg.adm1.query$NAME_1, df.coords$Adm1)
+    df.coords$Adm2 <- ifelse(!is.na(arg.adm2.query$NAME_2), arg.adm2.query$NAME_2, df.coords$Adm2)
+  }
+
+  # OBTAIN ELEVATION FROM GBIF FROM LAT/LON with Google API
+  api.key <- "AIzaSyBdXLWomxOy7h2F_q-PZPmvJ5tZ115N3X0"
+
+  latlon <- df.coords[,colnames(df.coords) == "Lat" | colnames(df.coords) == "Lon"]
+  colnames(latlon)[colnames(latlon) == "Lat"] <- "decimalLatitude"
+  colnames(latlon)[colnames(latlon) == "Lon"] <- "decimalLongitude"
+  elevation.query <- rgbif::elevation(input = latlon, key = api.key)
+  df.coords$Elevation <- formatC(elevation.query$elevation, 0, format = "f")
+
+
+  # CONVERT LAT/LON TO NUMERIC
+  df.coords$Lat <- df.coords$Lat_bk
+  df.coords$Lon <- df.coords$Lon_bk
+
+  # Fix Reverse Geocode Formating
+  df.coords$Country <- gsub("U\\.S\\.A.", "USA", df.coords$Country)
+  df.coords$Country <- gsub("Can\\.", "Canada", df.coords$Country)
+  df.coords$Country <- gsub("Mex\\.", "Mexico", df.coords$Country)
+  df.coords$Country <- gsub("Baja CA", "Baja California Norte", df.coords$Country)
+  df.coords$Country <- gsub("Arg\\.", "Argentina", df.coords$Country)
+  df.coords$Region <- gsub("\\sNP", " National Park", df.coords$Region)
+  df.coords$Region <- gsub("\\sNS", " National Seashore", df.coords$Region)
+  df.coords$Adm2 <- gsub("Do\xf1a Ana", "Doña Ana", df.coords$Adm2) # Fix typo in shapefiles
+  df.coords$Adm1 <- gsub("(?<=\\b)([a-z])", "\\U\\1", tolower(df.coords$Adm1), perl=TRUE) # convert any all caps to title case
+
+  df.coords$Adm1 <- gsub2(state.name, state.abb, df.coords$Adm1) # Sub state abbreviations for names
+
+  df <- dplyr::bind_rows(df.coords, df.no.coords)
+
+  df$Lat_bk <- NULL # remove uneeded columns
+  df$Lon_bk <- NULL # remove uneeded columns
+
+  cat(paste0("Ending reverse geocoding\n\n"))
+  return(df)
+}
+
+
+
+#' function that fills in missing taxon information—generates a dataframe
+#' with same format as original dataframe needs to either have a 'knowntaxalevel'
+#' and 'taxonidinput' column, or dataframe needs to have the following columns:
+#' 'class', 'order', 'family', 'subfamily', 'genus', 'species'. function outputs
+#' a dataframe with same row and column order as original dataframe.
+#' @param df a database in CASENT format
+#' @param key # key containing taxonomic information
+#' @export
+fill_taxa <- function(df, key){
+  cat(paste0("beginning taxa fill\n\n"))
+
+  df_template <- df[0,] # create template to later preserve column order
+
+  df$sort <- 1:nrow(df) # create column for restoring row order
+
+  if('knowntaxalevel' %in% colnames(df)){ # this part of the control loop will only process field form data
+
+    df$class <- na
+    df$order <- na
+    df$family <- na
+    df$subfamily <- na
+    df$genus <- na
+    df$species <- na
+    df[['genus species']] <- na
+
+    # distribute taxonidinput to the correct taxa column based on knowntaxalevel
+    for(i in 1:nrow(df)){
+      if(!is.na(df$knowntaxalevel[i])){
+        taxa_rank <- df$knowntaxalevel[[i]]
+        df[i,taxa_rank] <- df$taxonidinput[[i]]
+      }
+    }
+
+    # split up genus and species
+    if(!all(is.na(df$`genus species`))){
+      df$genus <- str_match(df[['genus species']], "(.+)\\s(.+)")[,2]
+      df$species <- str_match(df[['genus species']], "(.+)\\s(.+)")[,3]
+      df["genus species"] <- null
+    }
+  }
+
+  # this part of the loop fills in taxonomic entries from the key
+  # generate hierarchical keys
+  sf_key <- select(key[!duplicated(key$subfamily),], -genus)
+  f_key <- select(key[!duplicated(key$family),], -subfamily, -genus)
+  o_key <- select(key[!duplicated(key$order),], -family, -subfamily, -genus)
+
+  # start filling in taxa information
+  has_genus <- filter(df, !is.na(genus)) # records which have genus
+  a <- merge_with_order(select(has.genus, -class, -order, -family, -subfamily), key, by='genus', all.x = true, keep_order = 1)
+  remainder <- filter(df, is.na(genus)) # records that don't have genus
+
+  has_subfamily <- filter(remainder, !is.na(subfamily)) # records that have subfamily instead
+  b <- merge_with_order(select(has_subfamily, -class, -order, -family), sf_key, by='subfamily', all.x = true, keep_order = 1)
+  remainder <- filter(remainder, is.na(subfamily)) # records that also don't have subfamily
+
+  has_family <- filter(remainder, !is.na(family)) # records that have family instead
+  c <- merge_with_order(select(has_family, -class, -order), f_key, by='family', all.x = true, keep_order = 1)
+  remainder <- filter(remainder, is.na(family)) # records that also don't have family
+
+  has_order <- filter(remainder, !is.na(order)) # records that have order instead
+  d <- merge_with_order(select(has_order, -class), o_key, by='order', all.x = true, keep_order = 1)
+  remainder <- filter(remainder, is.na(order)) # records that also don't have order (all the rest)
+
+  df_final <- bind_rows(a, b, c, d, remainder)
+
+  # check that everything's put back together correctly
+  if(nrow(df) != nrow(df_final)){
+    cat('something is wrong! records are missing after filling in taxon information')
+    stop()
+  }
+
+
+  # correct taxonomic names that have changed
+  ###(fill in later)
+
+  # return correct sort order
+  df_final <- arrange(df_final, sort)
+
+  # return correct columns in order of original inputted data frame
+  df_temp <- select_(df_final, .dots = names(df_template))
+
+  # check if input data had taxon information and if not add taxon columns
+  if(!'genus' %in% names(df_template)){
+    df_temp <- cbind(df_temp, select(df_final, class, order, family, subfamily, genus, species))
+    df_temp <- select(df_temp, collectioncode, class, order, family, subfamily, genus, species, everything())
+  }
+
+  df_final <- df_temp
+  cat(paste0("ending taxa fill\n\n"))
+  return(df_final)
+
+}
+
+
+
+#' function that safely reads in CASENT insect database and handles dates with lubridate
+#' reads in all other columns as character/text
+#' @param path path to CASENT insect database in Excel format
+#' @param sheet.num sheet number that database is located on
+#' @return an XLS database with dates that are not messed up
+#' @export
+read_dates_safely <- function(path, sheet.num){
+  df <- readxl::read_excel(path, sheet = sheet.num, na = c('NA', ""))
+  df$CollectionCode <- as.character(df$CollectionCode)
+  df$DateCollectedStart <- stringr::str_match(df$DateCollectedStart, "\\d+-\\d+-\\d+") # get rid of the time part of the date left by Excel
+  df$DateCollectedEnd <- stringr::str_match(df$DateCollectedEnd, "\\d+-\\d+-\\d+") # get rid of the time part of the date left by Excel
+  df$DateCollectedStart <- lubridate::ymd(df$DateCollectedStart) # Convert dates for Master Database
+  df$DateCollectedEnd <- lubridate::ymd(df$DateCollectedEnd) # Convert dates for Master Database
+  return(df)
+}
+
+
+
+#' function that keeps original order after merging data frames
+#' @export
+merge_with_order <- function(x, y, ..., sort = T, keep_order){
+  # this function works just like merge, only that it adds the option to return the merged data.frame ordered by x (1) or by y (2)
+  add.id.column.to.data <- function(DATA)
+  {
+    data.frame(DATA, id... = seq_len(nrow(DATA)))
+  }
+  # add.id.column.to.data(data.frame(x = rnorm(5), x2 = rnorm(5)))
+  order.by.id...and.remove.it <- function(DATA)
+  {
+    # gets in a data.frame with the "id..." column.  Orders by it and returns it
+    if(!any(colnames(DATA)=="id...")) stop("The function order.by.id...and.remove.it only works with data.frame objects which includes the 'id...' order column")
+
+    ss_r <- order(DATA$id...)
+    ss_c <- colnames(DATA) != "id..."
+    DATA[ss_r, ss_c]
+  }
+
+  # tmp <- function(x) x==1; 1	# why we must check what to do if it is missing or not...
+  # tmp()
+
+  if(!missing(keep_order))
+  {
+    if(keep_order == 1) return(order.by.id...and.remove.it(merge(x=add.id.column.to.data(x),y=y,..., sort = FALSE)))
+    if(keep_order == 2) return(order.by.id...and.remove.it(merge(x=x,y=add.id.column.to.data(y),..., sort = FALSE)))
+    # if you didn't get "return" by now - issue a warning.
+    warning("The function merge.with.order only accepts NULL/1/2 values for the keep_order variable")
+  } else {return(merge(x=x,y=y,..., sort = sort))}
+}
+
+
+
+
+#' function that finds miles in a string of plain English
+#' and converts to km in a string
+#' @param vec a vector of values in miles
+#' @return a vector of values in kilometers
+#' @export
+mi_to_km <- function(vec){
+  z <- str_match(vec, "^(.*?)(\\d+\\.?\\d+)( miles .*?)$")
+  prefix <- z[,2]
+  miles <- z[,3]
+  suffix <- z[,4]
+  km <- round(as.numeric(miles) * 1.60934, 1)
+  suffix <- gsub("miles", "km", suffix)
+  new <- paste3(prefix, km, suffix, sep="")
+  out <- ifelse(!is.na(new), new, vec)
+  return(out)
+}
+
+
+#' rounds lat lon values based on sensible precision and manage formats
+#' based on accuracy information field records
+#' @param df a database in CASENT format
+#' @return a dataframe with rounded lat lon values
+#' @export
+round_coords <- function(df){
+  print("Starting lat lon rounder based on GIS accuracy")
+  # Temporarily remove records with "NA" or no numbers in the LatLonMaxError field so they don't get processed
+  df.noNum <- df[grepl("^([^0-9]*)$", df$LatLonMaxError, perl = TRUE),]
+  df.na <- df[is.na(df$LatLonMaxError),]
+  df <- df[grepl("\\d", df$LatLonMaxError, perl = TRUE),]
+
+  # Extract the number from LatLonMaxError String
+  df <- mutate(df, LatLonMaxError_NUM = str_extract(df$LatLonMaxError, "[\\d.]+"))
+
+  # Make sure Lat/Lon associated columns are numeric
+  df$Lat <- as.numeric(df$Lat)
+  df$Lon <- as.numeric(df$Lon)
+  df$LatLonMaxError_NUM <- as.numeric(df$LatLonMaxError_NUM)
+
+  # ROUND LAT/LON TO APPROPRIATE VALUES BASED ON ACCURACY
+  df['roundNum'] <- NA
+  df$roundNum[df$LatLonMaxError_NUM >= 1000] <- 2
+  df$roundNum[df$LatLonMaxError_NUM >= 100 & df$LatLonMaxError_NUM < 1000] <- 3
+  df$roundNum[df$LatLonMaxError_NUM >= 10 & df$LatLonMaxError_NUM < 100] <- 4
+  df$roundNum[df$LatLonMaxError_NUM < 10] <- 5
+
+  df$roundNum <- as.numeric(df$roundNum)
+
+  # Overwrite rounded Lat/Lon results with original values
+  results <- NA
+  for(i in 1:nrow(df)){
+    results[[i]] <- formatC(df$Lat[i], df$roundNum[i], format = "f")
+  }
+  df$Lat <- results
+
+  results <- NA
+  for(i in 1:nrow(df)){
+    results[[i]] <- formatC(df$Lon[i], df$roundNum[i], format = "f")
+  }
+  df$Lon <- results
+
+  # Format as character values so no funny business happens to Lat/Lon
+  df$Lat <- as.character(df$Lat)
+  df$Lon <- as.character(df$Lon)
+
+  # Delete columns that aren't needed
+  df$roundNum <- NULL
+  df$LatLonMaxError_NUM <- NULL
+
+  # Add back records that were removed pre-processing above and then re-sort database
+  df <- rbind(df, df.noNum, df.na)
+
+  # Sort whatever column is necessary before returning ouput since I cut and pasted the df so much
+  if("SpecimenCode" %in% colnames(df)){
+    df <- df[with(df, order(SpecimenCode)),] # sort cc.new;
+  } else{ if("CollectionCode" %in% colnames(df)){
+    df <- df[with(df, order(CollectionCode)),] # sort cc.new
+  }
+  }
+  print("Ending LatLonSigFig")
+  return(df)
+}
+
+
+
+#' streamline word spellings for CASENT style insect database
+#' @param df a database in CASENT format
+#' @return an updated dataframe in CASENT format
+#' @export
+clean_ento_fields <- function(df){
+  df$Locale <- mi_to_km(df$Locale) # change miles to km in locale
+  df$CollectedBy <- "RP Overson"
+  df$LocatedAt <- "RP Overson Collection"
+  df$OwnedBy <- "RP Overson"
+  df$Datum <- "WGS 84"
+  df$Method <- gsub("black light", "UV light", df$Method)
+  df$Method <- gsub("blacklight", "UV light", df$Method)
+  df$Method <- gsub("hand/aspirator", "hand", df$Method)
+  df$Locale <- gsub("\\sRD", " Road", df$Locale)
+  df$Locale <- gsub("\\sAVE", " Avenue", df$Locale)
+  df$Locale <- gsub("\\sBLVD", " Boulevard", df$Locale)
+  df$Locale <- gsub("\\sST", " Street", df$Locale)
+  df$Locale <- gsub("\\sHWY", " Highway", df$Locale)
+  df$Microhabitat <- gsub("foraging on ground", "on ground", df$Microhabitat)
+  return(df)
+}
+
+
+
+
+
+
+
+
+
+
+#' This is a wrapper of the writeOGR function that takes a critter club
+#' database format and turns it to a spatial points data frame
+#' and then converts it to a kml for viewing in Google Earth
+#' There is a bug in the KML driver for writeOGR that unfortunately throws a cryptic warning
+#' but the code seems to still work
+#' @param df a data frame in standard Cal Academy Collection Code Format
+#' @param output.path the full path of where the file should be saved
+#' @export
+write.critter.kml <- function(df, output.path){
+  # convert a dataframe to a KML file for viewing in Google Earth
+  df %<>% select(Lat, Lon, CollectionCode)
+  # turn master data frame into a Spatial Point object and project to WGS84
+  df$Lat <- as.numeric(df$Lat)
+  df$Lon <- as.numeric(df$Lon)
+  coords <- as.data.frame(cbind(Lon = df$Lon, Lat = df$Lat))
+  points <- coords
+  sp::coordinates(points) <- ~Lon + Lat
+  spdf <- sp::SpatialPointsDataFrame(points, df)
+  proj4string(spdf) <- sp::CRS("+proj=longlat +ellps=WGS84")
+  spdf <- sp::spTransform(spdf, CRS("+proj=longlat +ellps=WGS84"))
+  rgdal::writeOGR(obj = spdf, dsn = output.path, layer = "insect", driver = "KML", dataset_options = "NameField=CollectionCode", overwrite_layer = T)
+}
+
+
+
+
+
+
+
+
+#' this function streamlines adding clarifying text to the end of a filename
+#' @param full.path a full path to a file
+#' @param text the text string you want to add to the file base name
+#' @export
+add_to_filename <- function(full.path, text){
+  basename <- full.path %>% basename()
+  dir.name <- full.path %>% dirname()
+  file.sans.ext <- basename %>% tools::file_path_sans_ext()
+  ext <- basename %>% tools::file_ext()
+  new.save.path <- paste0(dir.name, "/", file.sans.ext, text, ".", ext)
+  return(new.save.path)
+}
+
+
+
+
+
+
+
+#' ifelse function that doesn't obliterate classes (i.e. date formats, etc...)
+#' @export
+safe_ifelse <- function(cond, yes, no){
+  class.y <- class(yes)
+  X <- ifelse(cond,yes,no)
+  class(X) <-class.y; return(X)
+}
+
+#' modified gsub function that allows substitution of lists of key value pairs
+#' @export
+gsub2 <- function(pattern, replacement, x, ...) {
+  for(i in 1:length(pattern))
+    x <- gsub(pattern[i], replacement[i], x, ...)
+  x
+}
+
+#' paste function that doesn't paste NA's as strings
+#' @export
+paste3 <- function(...,sep=", ") {
+  L <- list(...)
+  L <- lapply(L,function(x) {x[is.na(x)] <- ""; x})
+  ret <-gsub(paste0("(^",sep,"|",sep,"$)"),"",
+             gsub(paste0(sep,sep),sep,
+                  do.call(paste,c(L,list(sep=sep)))))
+  is.na(ret) <- ret==""
+  ret
+}
+
+
+
+#' Last specimen code finder
+# function which takes a collection code and sc.db and returns
+# the last specimen code (highest number) associated with that collection.
+# This function is useful for making sure that specimen codes are not duplicated
+# when generating new ones.
+#' @param cc.code a numeric value corresponding to a collection code
+#' @param sc.db a data frame file in standard Cal Academy specimen code database format
+#' @return a numeric value corresponding to the last assigned specimen code for a given collection code
+#' @export
+find_max_sc <- function(cc.code, sc.db){
+  sc.db$SpecimenCodeBase <- str_match(sc.db$SpecimenCode, '(\\w+#(\\d+))')[,2]
+  sc.db$SpecimenCodeNum <- str_match(sc.db$SpecimenCode, '(\\w+#(\\d+))')[,3] %>% as.numeric()
+  sc.db$SpecimenCodeSuffix <- str_match(sc.db$SpecimenCode, '(\\w+#\\d+-(\\d+))')[,3]
+  sc.query <- sc.db %>% filter(sc.db$SpecimenCodeNum %in% cc.code)
+  if(nrow(sc.query) > 0){
+    max.sc <- max(sc.query$SpecimenCodeSuffix[]) %>% as.numeric()
+    # if a match is found in the specimen code database but there are no split codes yet for that collection code return "1"
+    if(is.na(max.sc)){
+      max.sc <- 1
+    }
+    return(max.sc)
+  } else cat(paste0("No match in the specimen code database for that collection code!\n"))
+}
+
+
+
+
+
+
+
+
+
+
