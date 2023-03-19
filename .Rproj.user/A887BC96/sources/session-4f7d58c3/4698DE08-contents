@@ -649,34 +649,6 @@ rev_geocode <- function(df, poly, fieldName, newName){
   }
 }
 
-#' This function attaches desired data from a shapefile to a Symbiota formatted
-#' data frame.
-#' @param df a Symbiota formatted database
-#' @param poly a simple feature formatted shapefile of polygons
-#' @param fieldName The name of the single field in the shapefile you want to extract
-#' @param newName User-defined new name for the newly attached field in the dataframe
-#' @export
-#' @return returns a database with desired column from the shapefile attached
-rev_geocode2 <- function(df, poly, fieldName, newName){
-  df %<>% dplyr::filter(!is.na(decimalLatitude)) # remove any rows without coordinates
-  # convert data frame to simple feature (sf) format (note that 4326 defines WGS84)
-  dfPoints <- sf::st_as_sf(df, coords = c(x = "decimalLongitude", y = "decimalLatitude"), crs = 4326)
-  # For points that fall within polygons, adds attributes, NOTE! retains all points if left=TRUE, otherwise uses inner_join
-  dfPoints <- sf::st_join(dfPoints, left = TRUE, poly[fieldName]) # join points
-  # check and see if there is already data in the new name user defined to protect it
-  if(newName %in% names(df)){
-    results <- pull(dfPoints, fieldName)
-    df[newName] <- ifelse(is.na(df[,newName]), results, pull(df[newName]))
-  } else{
-    # if user-defined new column doesn't exist just mutate a new column
-    # pull the focal data from the points object and bind to original
-    # df. !! and := notation is needed for dplyr to assign col name with a variable rather than a string
-    df %<>% dplyr::mutate(!!newName := dplyr::pull(dfPoints, fieldName))
-  }
-  return(df)
-}
-
-
 
 #' reverse geocode function. This function takes a standard Cal Academy
 #' database and uses the lat lon columns to add additional reverse
