@@ -9,7 +9,9 @@ names accordingly while warning the user about names that cannot be matched}
 taxo_updatr(df, dict)
 }
 \arguments{
-\item{df}{a dataframe}
+\item{df}{a data frame}
+
+\item{dict}{a data frame with a look-up dictionary}
 }
 \value{
 a data frame

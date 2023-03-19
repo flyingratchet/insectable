@@ -7,6 +7,13 @@
 \usage{
 taxon.summ.by.type(filled.cl, type, taxon.rank)
 }
+\arguments{
+\item{filled.cl}{a filled checklist}
+
+\item{type}{a type of organism}
+
+\item{taxon.rank}{a taxonomic rank}
+}
 \value{
 a vector with results
 }

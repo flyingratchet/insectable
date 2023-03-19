@@ -1,4 +1,4 @@
-##### PARSING COMPLETLY RAW TEXT #####
+##### PARSING COMPLETELY RAW TEXT #####
 
 #' This function is used with text parsing to grab a header that is up above
 #' an entry and associate it with all entries below it
@@ -964,8 +964,8 @@ flatten_rgbif <- function(df, resultColumn){
 #' This function matches a Symbiota formatted data frame of biological occurrences to
 #' a local gbif dictionary created by gbif_dictionary_builder.R and updates taxonomic
 #' names accordingly while warning the user about names that cannot be matched
-#' @param df a dataframe
-#' @param dict
+#' @param df a data frame
+#' @param dict a data frame with a look-up dictionary
 #' @return a data frame
 #' @export
 taxo_updatr <- function(df, dict){
@@ -1642,6 +1642,42 @@ find_max_sc <- function(cc.code, db_sc){
 
 ##### MEDIAWIKI INTERFACING #####
 
+
+
+# function that adds brackets appropriately around lists that are nested in each element in a column
+#' @return a modified data frame
+#' @param column a data frame column
+#' @export
+bracketr <- function(column){
+  library(glue)
+  column <- str_split(column, ",")
+  column <- lapply(column, glue_collapse, sep = "]], [[")
+  column <- gsub("^", "[[", column)
+  column <- gsub("$", "]]", column)
+  column %<>% str_remove_all("\\[\\[\\]\\]")
+  return(column)
+}
+
+
+
+#' This function produces the 'prefix' file necessary to preface MediaWiki subsequently
+#' uploaded content with a <noinclude> tag. This is a silly 'hack' file that needs
+#' to be uploaded before the template calls on the data pages so that the calls are
+#' sandwiched in an <includeonly> tag pair. It literally just uploads the text "<includeonly>" as a precursor before
+#' any other data is appended to the page#'
+#' @param df a data frame
+#' @param title the column that contains the names of wiki pages to be processed
+#' @param output_path the path to save the prefix file which will later be uploaded to a MediaWiki instance
+#' @export
+include_only_prefix_maker <- function(df, title = Title, output_path){
+  df %>%
+    select({{title}}) %>%
+    mutate(`Free Text` = "<includeonly>")
+  write_csv(df, output_path, na = "")
+}
+
+
+
 #'function that rearranges a dataframe to a lookup table style format where every
 #'unique value across focal columns is represented in the leftmost column of the dataframe
 #' @return a vector with results
@@ -1769,11 +1805,11 @@ lua_df_converter <- function(df, id_column){
 #' This function plots family observation level results by type of animal. The
 #' aes_string function was an elegant way to have user input become col_names
 #' within a ggplot wrapper
-#' @param checklist
-#' @param type
-#' @param taxonRank
-#' @param counts
-#' @param dir
+#' @param checklist a checklist
+#' @param type a type of organism category to filter on
+#' @param taxonRank a taxon rank
+#' @param counts counts
+#' @param dir output directory to save the graphs
 #' @return a vector with results
 #' @export
 graph_at_taxon <- function(checklist, type, taxonRank, counts, dir){
@@ -1812,9 +1848,9 @@ graph_at_taxon <- function(checklist, type, taxonRank, counts, dir){
 
 #' This function takes a filled checklist, a type of animal, and a taxon rank
 #'  and makes a standard critter club checklist report
-#' @param filled.cl
-#' @param type
-#' @param taxon.rank
+#' @param filled.cl a filled checklist
+#' @param type a type of organism
+#' @param taxon.rank a taxonomic rank
 #' @return a vector with results
 #' @export
 taxon.summ.by.type <- function(filled.cl, type, taxon.rank){

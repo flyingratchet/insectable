@@ -5,9 +5,14 @@
 \title{function that adds brackets appropriately around lists that are nested in each element in a column}
 \usage{
 bracketr(column)
+
+bracketr(column)
 }
 \arguments{
 \item{column}{a data frame column}
+}
+\value{
+a modified data frame
 }
 \description{
 function that adds brackets appropriately around lists that are nested in each element in a column

@@ -8,6 +8,17 @@ within a ggplot wrapper}
 \usage{
 graph_at_taxon(checklist, type, taxonRank, counts, dir)
 }
+\arguments{
+\item{checklist}{a checklist}
+
+\item{type}{a type of organism category to filter on}
+
+\item{taxonRank}{a taxon rank}
+
+\item{counts}{counts}
+
+\item{dir}{output directory to save the graphs}
+}
 \value{
 a vector with results
 }
