@@ -6,10 +6,12 @@
 which also avoids the very stupid erroneous autoguessing errors stemming from
 fields which have too many NA's in their records}
 \usage{
-read_xlsx_char(xlsx_path)
+read_xlsx_char(xlsx_path, sheet)
 }
 \arguments{
 \item{xlsx_path}{a path to an xlsx file}
+
+\item{sheet}{an integer representing the sheet number to read}
 }
 \description{
 wrapper for readxl::read_xlsx() that forces all cols to character

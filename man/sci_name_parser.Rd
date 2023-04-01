@@ -2,7 +2,7 @@
 % Please edit documentation in R/insectable.R
 \name{sci_name_parser}
 \alias{sci_name_parser}
-\title{function that takes biological records that only have a scientificName column
+\title{function that takes biological records that only have a scientific_name column
 and parses it and adds Linnaean columns: kingdom, phylum, class, order,
 family, genus...}
 \usage{
@@ -15,7 +15,7 @@ sci_name_parser(df)
 a data frame with expanded Linnaean columns
 }
 \description{
-function that takes biological records that only have a scientificName column
+function that takes biological records that only have a scientific_name column
 and parses it and adds Linnaean columns: kingdom, phylum, class, order,
 family, genus...
 }

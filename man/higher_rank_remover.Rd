@@ -2,7 +2,7 @@
 % Please edit documentation in R/insectable.R
 \name{higher_rank_remover}
 \alias{higher_rank_remover}
-\title{Function that removes higher linnean rank names from the scientificName column
+\title{Function that removes higher linnean rank names from the scientific_name column
 if the are already represented by lower ranked names, for example, removing
 'Lepidoptera' if 'Danaus plexippus' already exists in the same column.}
 \usage{
@@ -17,7 +17,7 @@ higher_rank_remover(df, rankList)
 a data frame
 }
 \description{
-Function that removes higher linnean rank names from the scientificName column
+Function that removes higher linnean rank names from the scientific_name column
 if the are already represented by lower ranked names, for example, removing
 'Lepidoptera' if 'Danaus plexippus' already exists in the same column.
 }

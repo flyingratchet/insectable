@@ -18,26 +18,121 @@ grab_section_headers <- function(base_text_loc, header_loc, input_vec){
 
 
 
-##### WRAPPERS AROUND READING IN FILES #####
+##### RENAMING KEYS FOR ROSETTA STONE FOR CONVERTING FROM SYMBIOTA/DARWIN CORE FORMAT TO TIDY FORMAT #####
 
-#' wrapper for readxl::read_xlsx() that forces all cols to character
-#' which also avoids the very stupid erroneous autoguessing errors stemming from
-#' fields which have too many NA's in their records
-#' @param xlsx_path a path to an xlsx file
+#' Renaming keys for "Rosetta stone" that converts data frame names from
+#' Symbiota/Darwin Core format to tidy format
+#' @param df a data frame
+#' @param direction a string containing either "forward", the default, for Symbiota to Tidy conversion or "reverse" for the oppotite
 #' @export
-read_xlsx_char <- function(xlsx_path){
-  readxl::read_xlsx(xlsx_path, col_types = "text")
+symb_tidy_rosetta <- function(df, direction = "forward"){
+
+
+  # define Rosetta Stone for translating between data formats
+  key <- c(
+    lat = "decimal_latitude",
+    lon = "decimal_longitude",
+    minimum_elevation = "minimumElevationInMeters",
+    coordinate_uncertainty = "coordinate_uncertainty_in_meters",
+    date = "event_date"
+  )
+
+  if(direction == "forward"){
+    names(df) %<>% snakecase::to_snake_case()
+    df %<>% rename(any_of(key))
+  }
+
+  if(direction == "reverse"){
+    key <- setNames(names(key), key) # invert look-up key
+    df %<>% rename(any_of(key))
+    names(df) %<>% snakecase::to_lower_camel_case()
+  }
+  return(df)
 }
 
 
 
+##### READING/WRITING DATA AND FORMATTING #####
+
+
+
 #' wrapper for readr::read_csv that forces all cols to character
-#' which also avoids the very stupid erroneous auto-guessing errors stemming from
+#' which also avoids the erroneous auto-guessing errors stemming from
 #' fields which have too many NA's in their records
 #' @param csv_path a path to a csv file
 #' @export
 read_csv_char <- function(csv_path){
   df <- readr::read_csv(csv_path, col_types = cols(.default = "c"))
+  return(df)
+}
+
+
+
+
+#' Wrapper for readr::read_csv that forces all cols to character with a few exceptions
+#' pertinent to critter club which also avoids the erroneous auto-guessing
+#' errors stemming from fields which have too many NA's in their records
+#' requires date fields to be in Symbiota format
+#' @param csv_path a path to a csv file#'
+#' @export
+read_csv_critter <- function(csv_path){
+
+  df <- read_csv_char(csv_path)
+
+  if("eventDate" %in% names(df)) {
+    df$eventDate %<>%
+      stringr::str_extract("\\d\\d\\d\\d-\\d\\d-\\d\\d") %>%
+      ymd()
+    df %>% mutate(eventDate = lubridate::ymd(eventDate))
+  }
+
+  df %<>% symb_tidy_rosetta()
+
+  return(df)
+}
+
+
+
+
+#' wrapper for readxl::read_xlsx() that forces all cols to character
+#' which also avoids the very stupid erroneous autoguessing errors stemming from
+#' fields which have too many NA's in their records
+#' @param xlsx_path a path to an xlsx file
+#' @param sheet an integer representing the sheet number to read
+#' @export
+read_xlsx_char <- function(xlsx_path, sheet){
+  readxl::read_xlsx(xlsx_path, sheet = sheet, col_types = "text", na = "")
+}
+
+
+
+
+
+#' Wrapper for readr::read_xlsx that forces all cols to character with a few exceptions
+#' pertinent to critter club and formats columns for critter club records
+#' @param xlsx_path a path to a csv file#'
+#' @param sheet an integer representing the sheet number to read
+#' @export
+#'
+read_xlsx_critter <- function(xlsx_path, sheet, na = ""){
+  library(clock)
+  df <- read_xlsx(xlsx_path, sheet = sheet, na = na) %>%
+    mutate_all(as.character)
+
+  # clean blank time stamps and force to date format with clock package
+  df$eventDate %<>% clock::date_parse()
+
+  # check if there is a time column before manipulating
+  if('time' %in% names(df)){
+    if(any(!is.na(df$time))){# fix dumb time stamp read-in problem where excel puts erroneous date with time
+      df %<>% mutate(time = as.character(gsub(".* ","", time)))
+    }
+  }
+  # format date
+  df %<>% mutate(eventDate = lubridate::ymd(eventDate))
+
+  df %<>% symb_tidy_rosetta()
+
   return(df)
 }
 
@@ -68,13 +163,13 @@ read_cc_db <- function(collectionDBFilePath){
                                             ElevationMaxError = col_character(),
                                             DateCollectedStart = col_date(format = ""),
                                             DateCollectedEnd = col_date(format = ""),
-                                            Habitat = col_character(),
+                                            habitat = col_character(),
                                             Microhabitat = col_character(),
                                             Method = col_character(),
                                             Medium = col_character(),
                                             CollectedBy = col_character(),
                                             CollectionNotes = col_character(),
-                                            LocalityCode = col_character()
+                                            locality_code = col_character()
                            )
   )
   return(db_cc)
@@ -121,13 +216,13 @@ read_sc_db <- function(specimenDBFilePath){
                                             ElevationMaxError = col_character(),
                                             DateCollectedStart = col_date(format = ""),
                                             DateCollectedEnd = col_date(format = ""),
-                                            Habitat = col_character(),
+                                            habitat = col_character(),
                                             Microhabitat = col_character(),
                                             Method = col_character(),
                                             Medium = col_character(),
                                             CollectedBy = col_character(),
                                             CollectionNotes = col_character(),
-                                            LocalityCode = col_character()
+                                            locality_code = col_character()
                            )
   )
   return(db_sc)
@@ -174,17 +269,40 @@ read_label_inbox <- function(specimenDBFilePath){
                                                   ElevationMaxError = col_character(),
                                                   DateCollectedStart = col_date(format = ""),
                                                   DateCollectedEnd = col_date(format = ""),
-                                                  Habitat = col_character(),
+                                                  habitat = col_character(),
                                                   Microhabitat = col_character(),
                                                   Method = col_character(),
                                                   Medium = col_character(),
                                                   CollectedBy = col_character(),
                                                   CollectionNotes = col_character(),
-                                                  LocalityCode = col_character()
+                                                  locality_code = col_character()
                                  )
   )
   return(label_inbox)
 }
+
+
+
+
+#' Wrapper for readr::write_csv that formats tidy formatted data frames
+#' back to Symbiota format before writing them off
+#' @param df a data frame to write to csv
+#' @param csv_path a path to save to
+#' @export
+write_csv_critter <- function(df, csv_path){
+
+  df %<>% symb_tidy_rosetta(direction = "reverse")
+
+  write_csv(df, csv_path)
+
+}
+
+
+
+
+
+
+
 
 
 
@@ -211,8 +329,8 @@ update_sc_from_cc <- function(db_sc, db_cc){
 
   # pull out columns from db_cc that will overwrite those from db_sc
   db_cc_overwrite <- db_cc %>% select(BaseCode, BiogeographicRegion, Country, Adm1, Adm2, Region, Locale, LocalityNotes, Lat, Lon, LatLonMaxError,
-                                      Datum, Elevation, ElevationMaxError, DateCollectedStart, DateCollectedEnd, Habitat, Microhabitat,
-                                      Method, CollectedBy, CollectionNotes, LocalityCode)
+                                      Datum, Elevation, ElevationMaxError, DateCollectedStart, DateCollectedEnd, habitat, Microhabitat,
+                                      Method, CollectedBy, CollectionNotes, locality_code)
   db_sc_new <- db_sc_untouched %>%
     left_join(db_cc_overwrite, by = 'BaseCode')
   # restore column order
@@ -239,28 +357,28 @@ update_sc_from_cc <- function(db_sc, db_cc){
 #' @return a data frame with updated locality information
 #' @export
 add_loc_info <- function(df, loc_key){
-  locC_is_na <- df[is.na(df$LocalityCode),]
-  locC_is_not_na <- df[!is.na(df$LocalityCode),]
+  loc_code_is_na <- df[is.na(df$locality_code),]
+  loc_code_is_not_na <- df[!is.na(df$locality_code),]
 
   # only removing columns when they exist makes this function agnostic to different database styles (i.e. critter club and insect collection)
   # these columns will be added back in with the join
-  if('Region' %in% colnames(locC_is_not_na)){locC_is_not_na$Region <- NULL}
-  if('Locale' %in% colnames(locC_is_not_na)){locC_is_not_na$Locale <- NULL}
-  if('Lat' %in% colnames(locC_is_not_na)){locC_is_not_na$Lat <- NULL}
-  if('Lon' %in% colnames(locC_is_not_na)){locC_is_not_na$Lon <- NULL}
-  if('LatLonMaxError_meters' %in% colnames(locC_is_not_na)){locC_is_not_na$LatLonMaxError_meters <- NULL}
-  if('LatLonMaxError' %in% colnames(locC_is_not_na)){locC_is_not_na$LatLonMaxError <- NULL}
-  if('Habitat' %in% colnames(df)){locC_is_not_na$Habitat <- NULL}
+  if('Region' %in% colnames(loc_code_is_not_na)){loc_code_is_not_na$Region <- NULL}
+  if('Locale' %in% colnames(loc_code_is_not_na)){loc_code_is_not_na$Locale <- NULL}
+  if('Lat' %in% colnames(loc_code_is_not_na)){loc_code_is_not_na$Lat <- NULL}
+  if('Lon' %in% colnames(loc_code_is_not_na)){loc_code_is_not_na$Lon <- NULL}
+  if('LatLonMaxError_meters' %in% colnames(loc_code_is_not_na)){loc_code_is_not_na$LatLonMaxError_meters <- NULL}
+  if('LatLonMaxError' %in% colnames(loc_code_is_not_na)){loc_code_is_not_na$LatLonMaxError <- NULL}
+  if('habitat' %in% colnames(df)){loc_code_is_not_na$habitat <- NULL}
 
   # convert data types to character to match loc.key format
-  locC_is_not_na$LocalityCode <- as_character(locC_is_not_na$LocalityCode)
+  loc_code_is_not_na$locality_code <- as_character(loc_code_is_not_na$locality_code)
 
 
   # create the join
-  locC_is_not_na <- left_join(locC_is_not_na, loc_key, by = 'LocalityCode')
+  loc_code_is_not_na <- left_join(loc_code_is_not_na, loc_key, by = 'locality_code')
 
   # put data frame back together
-  df <- bind_rows(locC_is_na, locC_is_not_na)
+  df <- bind_rows(loc_code_is_na, loc_code_is_not_na)
 
 
   # sort by collection code (if that column exists)
@@ -279,13 +397,13 @@ add_loc_info <- function(df, loc_key){
 parse_codes <- function(df){
   # check if data frame is a collection code dataframe
   if(any(names(df) %in% "CollectionCode")){
-  df$BaseCode <- as.numeric(str_match(df$CollectionCode, '\\w+#(\\d+)')[,2])
-  df$SubCode <- as.numeric(str_match(df$CollectionCode, '\\w+#(\\d+)-(\\d+)')[,3])
+    df$BaseCode <- as.numeric(str_match(df$CollectionCode, '\\w+#(\\d+)')[,2])
+    df$SubCode <- as.numeric(str_match(df$CollectionCode, '\\w+#(\\d+)-(\\d+)')[,3])
   }
   # check if data frame is a specimen code dataframe
   if(any(names(df) %in% "SpecimenCode")){
-  df$BaseCode <- as.numeric(str_match(df$SpecimenCode, '\\w+#(\\d+)')[,2])
-  df$SubCode <- as.numeric(str_match(df$SpecimenCode, '\\w+#(\\d+)-(\\d+)')[,3])
+    df$BaseCode <- as.numeric(str_match(df$SpecimenCode, '\\w+#(\\d+)')[,2])
+    df$SubCode <- as.numeric(str_match(df$SpecimenCode, '\\w+#(\\d+)-(\\d+)')[,3])
   }
   # check if data frame is a label_inbox dataframe
   if(any(names(df) %in% "Code")){
@@ -368,8 +486,8 @@ find_bad_G <- function(obs, key){
 #' @return a data frame with binomial and trinomial columns
 #' @export
 bi_tri <- function(df){
-  # function that takes a bio database and combines genus and specificEpithet into binomial and trinomial columns and returns the database
-  if("genus" %in% names(df) & "specificEpithet" %in% names(df) & "infraspecificEpithet" %in% names(df)){
+  # function that takes a bio database and combines genus and specific_epithet into binomial and trinomial columns and returns the database
+  if("genus" %in% names(df) & "specific_epithet" %in% names(df) & "infraspecific_epithet" %in% names(df)){
     # remove binomial and trinomial columns if they already exist
     if('binomial' %in% names(df)){
       df %<>% select(-binomial)
@@ -378,25 +496,25 @@ bi_tri <- function(df){
       df %<>% select(-trinomial)
     }
     # only fill values for binomial and trinomial when appropriate data is available
-    df$binomial <- ifelse(!is.na(df$specificEpithet) & !is.na(df$genus), paste(df$genus, df$specificEpithet), NA)
-    df$trinomial <- ifelse(!is.na(df$infraspecificEpithet), paste(df$genus, df$specificEpithet, df$infraspecificEpithet), paste(df$genus, df$specificEpithet))
+    df$binomial <- ifelse(!is.na(df$specific_epithet) & !is.na(df$genus), paste(df$genus, df$specific_epithet), NA)
+    df$trinomial <- ifelse(!is.na(df$infraspecific_epithet), paste(df$genus, df$specific_epithet, df$infraspecific_epithet), paste(df$genus, df$specific_epithet))
 
     # properly relocate columns
-    df %<>% relocate(binomial, .after = specificEpithet)
+    df %<>% relocate(binomial, .after = specific_epithet)
     df %<>% relocate(trinomial, .after = binomial)
     return(df)
-  } else{ cat(paste0("genus, specificEpithet, or infraspecificEpithet columns are missing!"))
+  } else{ cat(paste0("genus, specific_epithet, or infraspecific_epithet columns are missing!"))
   }
 }
 
-#'function that takes biological records that only have a scientificName column
+#'function that takes biological records that only have a scientific_name column
 #' and parses it and adds Linnaean columns: kingdom, phylum, class, order,
 #' family, genus...
 #' @param df a data frame of occurrence records in Symbiota format
 #' @return a data frame with expanded Linnaean columns
 #' @export
 sci_name_parser <- function(df){
-  if("scientificName" %in% names(df)){
+  if("scientific_name" %in% names(df)){
     # add in blank higher taxonomy scaffold for inputting later
     df$kingdom <- NA
     df$phylum <- NA
@@ -405,22 +523,22 @@ sci_name_parser <- function(df){
     df$family <- NA
 
     # erase "sp." or "sp" with a space in front of it as these are not needed
-    df$scientificName <- gsub(' sp\\.?$', "", df$scientificName)
+    df$scientific_name <- gsub(' sp\\.?$', "", df$scientific_name)
 
     # separate dataframe based on records which have spaces (and thus have binomials or trinomials),
     # and those that do not
-    dfSpace <- df %>% filter(grepl(" ", scientificName))
-    dfNoSpace <- df %>% filter(!grepl(" ", scientificName))
+    dfSpace <- df %>% filter(grepl(" ", scientific_name))
+    dfNoSpace <- df %>% filter(!grepl(" ", scientific_name))
 
     # for those with spaces seperate out the scientficName field by spaces
-    dfSpace %<>% separate(scientificName,
-                          c("genus", "specificEpithet", "infraspecificEpithet"),
+    dfSpace %<>% separate(scientific_name,
+                          c("genus", "specific_epithet", "infraspecific_epithet"),
                           sep = ' ', extra = "drop", fill = "right"
     )
 
     # for those without spaces, assess what the linnean rank is and parse accordingly
-    # dfNoSpace$scientificName %in% dict$family
-  } else{ message("can't parse scientificName column because it is missing!")
+    # dfNoSpace$scientific_name %in% dict$family
+  } else{ message("can't parse scientific_name column because it is missing!")
   }
 }
 
@@ -447,9 +565,9 @@ common_name_caps <- function(vec){
 #' @export
 lookup_common_name <-function(df, checklist){
   template <- df[0,] # create template to preserve column order
-  dfCommon <- df %>% filter(!is.na(commonName)) # save entries that already have a common name entered
-  dfNoCommon <- df %>% filter(is.na(commonName))
-  dfNoCommon <- left_join(select(dfNoCommon, -commonName), select(checklist, binomial, commonName), by = 'binomial')
+  dfCommon <- df %>% filter(!is.na(common_name)) # save entries that already have a common name entered
+  dfNoCommon <- df %>% filter(is.na(common_name))
+  dfNoCommon <- left_join(select(dfNoCommon, -common_name), select(checklist, binomial, common_name), by = 'binomial')
   bind_rows(dfCommon, dfNoCommon, template)
   return(df)
 }
@@ -460,8 +578,65 @@ lookup_common_name <-function(df, checklist){
 
 ##### GIS PROCESSES #####
 
+
+
+
+
+
+
+
+#' Function which filters coordinates in a data frame based on whether they
+#' fall within a polygon
+#' @param df a data frame of occurrence records that contains lat and lon columns
+#' @param poly a shape files with polygons
+#' @param lat decimal latitude field from the data from
+#' @param lon decimal longitude field from the data from
+#' @param results_col a character string representing the column where you like the label to be stored that indicates selected points
+#' @param tag a character string with which to label selected points
+#' @param crs a projection system
+#' @return a data frame with records filtered based on falling inside the focal polygon
+#' @export
+
+
+
+# df <- dbCritter
+# poly <- sfFishCreek
+# crs <- 4326
+# results_col <- "compendium"
+# lat <- "lat"
+# lon <- "lon"
+# tag <- "fishCreek"
+
+
+
+
+tag_by_poly <- function(df, poly, lat = "lat", lon = "lon", crs, results_col = "results", tag){
+
+
+  df_no_coords <- df %>% filter(is.na(lat) | is.na(lon))
+  df %<>% filter(!is.na(lat) | !is.na(lon))
+
+  # convert data frame to simple feature (sf) format
+  df_points <- df %>% sf::st_as_sf(coords = c(x = {{lon}}, y = {{lat}}), crs = crs)
+
+  # query which points are within polygon and record results in focal column
+  # final lengths > 0 creates a TRUE/FALSE vector from the st_within output
+  indicator <- sf::st_within(df_points, poly) %>% lengths > 0
+
+  # note that the last argument in if_else needs to be the content of the column and not the column itself (confusingly)
+  df[{{results_col}}] <- if_else(indicator, tag, df[[{{results_col}}]])
+
+  df <- bind_rows(df, df_no_coords)
+
+  return(df)
+}
+
+
+
+
+
 #'function which geoencodes records based on date and time stamps with gpx files
-#' @param records a data frame of occurence records that contains decimalLatitude and decimalLongitude columns
+#' @param records a data frame of occurence records that contains lat and lon columns
 #' @param timeCoords a csv of coordinates with time stamps usually from gps unit
 #' @param timezone timezone in which to interpret the biological records for matching to timeCoords (which are in UTC)
 #' @return a dataframe with filled in lat lon values
@@ -473,9 +648,9 @@ extract_coords <- function(records, timeCoords, timezone){
   if(grepl('^\\d\\d:\\d\\d:\\d\\d.+$', records$time) %>% any()){
     stop('something is wrong with time stamp format')
   }
-  records$dateTime <- as.POSIXct(paste(records$eventDate, records$time), format="%Y-%m-%d %H:%M")
-  records_GPS <- records %>% filter(!is.na(decimalLatitude)) # filter out anything with lat/lon or Locality Code
-  records_noGPS <- records %>% filter(is.na(decimalLatitude)) # filter out anything without lat/lon or Locality Code
+  records$date_time <- as.POSIXct(paste(records$date, records$time), format="%Y-%m-%d %H:%M")
+  records_GPS <- records %>% filter(!is.na(lat)) # filter out anything with lat/lon or Locality Code
+  records_noGPS <- records %>% filter(is.na(lat)) # filter out anything without lat/lon or Locality Code
   if(nrow(records_noGPS) < 1){
     cat(paste0("All records have coordinates already! This script is not needed!\n"))
   }
@@ -484,16 +659,16 @@ extract_coords <- function(records, timeCoords, timezone){
   records_notime <- filter(records_noGPS, is.na(time))
 
   # convert from time zone to UTC
-  records_time$dateTime <- records_time$dateTime - hours(timezone)
+  records_time$date_time <- records_time$date_time - hours(timezone)
   # force time zone to UTC without letting R jack with the actual time
-  records_time$dateTime <- lubridate::force_tz(records_time$dateTime, 'UTC')
+  records_time$date_time <- lubridate::force_tz(records_time$date_time, 'UTC')
   # select only columns needed for query
-  records_time_query <- records_time %>% select(decimalLatitude, decimalLongitude, dateTime) %>% arrange(dateTime)
-  # Change decimalLatitude/decimalLongitude to integer so data frames will combine
-  records_time_query$decimalLatitude <- as.numeric(records_time_query$decimalLatitude)
-  records_time_query$decimalLongitude <- as.numeric(records_time_query$decimalLongitude)
-  timeCoords$decimalLatitude <- as.numeric(timeCoords$decimalLatitude)
-  timeCoords$decimalLongitude <- as.numeric(timeCoords$decimalLongitude)
+  records_time_query <- records_time %>% select(lat, lon, date_time) %>% arrange(date_time)
+  # Change lat/lon to integer so data frames will combine
+  records_time_query$lat <- as.numeric(records_time_query$lat)
+  records_time_query$lon <- as.numeric(records_time_query$lon)
+  timeCoords$lat <- as.numeric(timeCoords$lat)
+  timeCoords$lon <- as.numeric(timeCoords$lon)
 
   # create a type for track points vs our records
   timeCoords$type <- "track point"
@@ -501,7 +676,7 @@ extract_coords <- function(records, timeCoords, timezone){
   joined_table <- bind_rows(records_time_query, timeCoords)
 
   # create a seamless date/time arranged table of records and track points
-  joined_table <- joined_table %>% arrange(dateTime)
+  joined_table <- joined_table %>% arrange(date_time)
   # create a running ID number for the table
   joined_table$ID <- 1:nrow(joined_table)
   # create a vector of just the ID locations of just our records in the table for looping through
@@ -517,18 +692,18 @@ extract_coords <- function(records, timeCoords, timezone){
     query_row <- filter(joined_table, ID == i)
     # create a new sort table devoid of non-focal collection records
     new_sort <- bind_rows(query_row, joined_table_no_rec)
-    new_sort <- arrange(new_sort, dateTime)
+    new_sort <- arrange(new_sort, date_time)
     # get row number of focal collection code in new sort table
     query_row_num <- which(new_sort$ID == i)
     query_row <- new_sort[query_row_num,]
     # get rows above and below focal record (closest in time)
     row_above <- new_sort[query_row_num - 1,]
     row_below <- new_sort[query_row_num + 1,]
-    above_diff <- query_row$dateTime - row_above$dateTime
-    below_diff <- query_row$dateTime - row_below$dateTime
+    above_diff <- query_row$date_time - row_above$date_time
+    below_diff <- query_row$date_time - row_below$date_time
 
     # check if either a row above or row below match cannot be found in track file
-    if(is.na(row_above$dateTime) | is.na(row_below$dateTime)){
+    if(is.na(row_above$date_time) | is.na(row_below$date_time)){
       cat(paste0("Warning, check collection records and track files, some collection records are not surrounded by gpx time stamps"))
     }
     # find the smaller of the two absolute values of the time differences
@@ -538,32 +713,32 @@ extract_coords <- function(records, timeCoords, timezone){
       as_tibble(row_below)
     }
     # convert to POSIXct class for manipulating time differences
-    query_row$dateTime <- as.POSIXct(query_row$dateTime)
-    closest_row$dateTime <- as.POSIXct(closest_row$dateTime)
-    time_diff <- difftime(query_row$dateTime, closest_row$dateTime, units = 'mins')
+    query_row$date_time <- as.POSIXct(query_row$date_time)
+    closest_row$date_time <- as.POSIXct(closest_row$date_time)
+    time_diff <- difftime(query_row$date_time, closest_row$date_time, units = 'mins')
     time_diff_abs <- abs(time_diff)
 
     # warn if collection records is too separated in time from closest track point
     counter = 0
     if(time_diff_abs < 15){
-      # Input correct decimalLatitude and decimalLongitude into records with date and time stamps if timestamp has a match in gps track within 15 min
-      records_time$decimalLatitude[records_time$dateTime == query_row$dateTime] <- closest_row$decimalLatitude
-      records_time$decimalLongitude[records_time$dateTime == query_row$dateTime] <- closest_row$decimalLongitude
-      # cat(paste0('Collection record at timestamp ', query_row$dateTime, ' is ', round(time_diff, 1),
+      # Input correct lat and lon into records with date and time stamps if timestamp has a match in gps track within 15 min
+      records_time$lat[records_time$date_time == query_row$date_time] <- closest_row$lat
+      records_time$lon[records_time$date_time == query_row$date_time] <- closest_row$lon
+      # cat(paste0('Collection record at timestamp ', query_row$date_time, ' is ', round(time_diff, 1),
       #            ' minutes separated from the nearest GPS trackpoint\n'))
-    } else{cat(paste0('WARNING: collection record at timestamp ', query_row$dateTime, ' is ', round(time_diff, 0),
+    } else{cat(paste0('WARNING: collection record at timestamp ', query_row$date_time, ' is ', round(time_diff, 0),
                       ' minutes separated from the nearest GPS trackpoint, please verify correct location.\n'))
     }
   }
   # check if any new coordinates have effectively been assigned before continuing
-  if(any(!is.na(records_time$decimalLatitude))){
+  if(any(!is.na(records_time$lat))){
     # Put database back together
     rec_new <- bind_rows(records_GPS, records_time, records_notime)
-    rec_new %<>% arrange(eventDate, time)
-    rec_new$dateTime <- NULL
-    cat(paste0('\n', length(na.omit(rec_new$decimalLatitude)) - length(na.omit(records$decimalLatitude)),
+    rec_new %<>% arrange(date, time)
+    rec_new$date_time <- NULL
+    cat(paste0('\n', length(na.omit(rec_new$lat)) - length(na.omit(records$lat)),
                ' records were updated with coordinates based on gpx timestamps\n'))
-    cat(paste0("WARNING: ", sum(is.na(rec_new$decimalLatitude)),
+    cat(paste0("WARNING: ", sum(is.na(rec_new$lat)),
                ' records are still missing coordinates\n'))
     return(rec_new)
   } else{
@@ -574,48 +749,48 @@ extract_coords <- function(records, timeCoords, timezone){
 
 
 
-#' Reads in gpx files recursively from a designated path and assembles and formats one exhuative dataframe with just location
-#' and time stamps sorted in order of occurence
+#' Reads in gpx files recursively from a designated path and assembles and formats one
+#' exhaustive dataframe with just location and time stamps sorted by time
 #' @param path a path to parent folder where gpx files occur
 #' @return a data frame of coords and time stamps for all gpx files specified
 #' @export
 munge_gpx <- function(path){
   # grab all gpx files recursively from the specified parent folder
-  gpx_files <- list.files(path = path, pattern = "\\.gpx$", recursive = T, full_names=TRUE)
+  gpx.files <- list.files(path = path, pattern = "\\.gpx$", recursive = T, full.names=TRUE)
 
-  # run lapply to read in all gpx files and htmlTreeParse to pull out timestamp info and genarate a list of individual dataframes
+  # run lapply to read in all gpx files and htmlTreeParse to pull out timestamp info and generate a list of individual dataframes
   # corresponding to each gpx file.
-  ldf <- lapply(gpx_files, function(file){
+  ldf <- lapply(gpx.files, function(file){
     pfile <- XML::htmlTreeParse(file = file, error = function(...) {}, useInternalNodes = T)
     elevations <- as.numeric(xpathSApply(pfile, path = "//trkpt/ele", xmlValue))
     times <- XML::xpathSApply(pfile, path = "//trkpt/time", xmlValue)
     coords <- XML::xpathSApply(pfile, path = "//trkpt", xmlAttrs)
     lats <- as.numeric(coords["lat",])
     lons <- as.numeric(coords["lon",])
-    df <- data.frame(Lat = lats, Lon = lons, Elevation = elevations, DateTime = times)
+    df <- data.frame(lat = lats, lon = lons, minimum_elevation = elevations, date_time = times)
     rm(list=c("elevations", "lats", "lons", "pfile", "times", "coords"))
     return(df)
   }
   )
   # combine all dataframes to one big master coordinate dataframe of all gpx trails
   all_coords <- data.table::rbindlist(ldf) # I used this rather than a dplyr solution because it's faster
-  all_coords$DateTime %<>% lubridate::ymd_hms() # fix date formatting
-  all_coords %<>% dplyr::arrange(DateTime)
+  all_coords$date_time %<>% lubridate::ymd_hms() # fix date formatting
+  all_coords %<>% dplyr::arrange(date_time)
   return(all_coords)
 }
 
 
 #' Populate elevation using the geonames server based on
-#' decimalLatitutde and decimalLongitude columns in a dataframe
+#' lat and lon columns in a dataframe
 #' # I obtained my username (which is 'roverso') from here to validate the elevation lookup request
 #' http://www.geonames.org/export/web-services.html
 #' @param df a database in SYMBIOTA format
 #' @return a dataframe with rounded lat lon values
 #' @export
 find_elevation <- function(df){
-  dfCoords <- df %>% select(decimalLatitude, decimalLongitude)
-  dfCoords$decimalLatitude <- as.numeric(dfCoords$decimalLatitude)
-  dfCoords$decimalLongitude <- as.numeric(dfCoords$decimalLongitude)
+  dfCoords <- df %>% select(lat, lon)
+  dfCoords$lat <- as.numeric(dfCoords$lat)
+  dfCoords$lon <- as.numeric(dfCoords$lon)
   elevationQuery <- rgbif::elevation(dfCoords, username = 'roverso')
   df$minimumElevationInMeters <- elevationQuery$elevation_geonames
   df$minimumElevationInMeters <- as.character(df$minimumElevationInMeters)
@@ -623,30 +798,40 @@ find_elevation <- function(df){
 
 
 
+
+
 #' This function attaches desired data from a shapefile to a Symbiota formatted
 #' data frame.
 #' @param df a Symbiota formatted database
 #' @param poly a simple feature formatted shapefile of polygons
-#' @param fieldName The name of the single field in the shapefile you want to extract
-#' @param newName User-defined new name for the newly attached field in the dataframe
+#' @param field_name The name of the single field in the shapefile you want to extract
+#' @param new_name User-defined new name for the newly attached field in the dataframe
 #' @export
 #' @return returns a database with desired column from the shapefile attached
-rev_geocode <- function(df, poly, fieldName, newName){
-  df %<>% dplyr::filter(!is.na(decimalLatitude)) # remove any rows without coordinates
+rev_geocode <- function(df, poly, field_name, new_name){
+  # remove any rows without coordinates
+  df_no_coords <- df %>% dplyr::filter(is.na(lat))
+  df %<>% filter(!is.na(lat))
+
   # convert data frame to simple feature (sf) format (note that 4326 defines WGS84)
-  dfPoints <- sf::st_as_sf(df, coords = c(x = "decimalLongitude", y = "decimalLatitude"), crs = 4326)
+  df_points <- sf::st_as_sf(df, coords = c(x = "lon", y = "lat"), crs = 4326)
+
+
   # For points that fall within polygons, adds attributes, NOTE! retains all points if left=TRUE, otherwise uses inner_join
-  dfPoints <- sf::st_join(dfPoints, left = TRUE, poly[fieldName]) # join points
+  df_points <- sf::st_join(df_points, left = TRUE, poly[field_name], crs = 4326) # join points
   # check and see if there is already data in the new name user defined to protect it
-  if(newName %in% names(df)){
-    results <- pull(dfPoints, fieldName)
-    df[newName] <- ifelse(is.na(df[,newName]), results, pull(df[newName]))
+  if(new_name %in% names(df)){
+    results <- pull(df_points, field_name)
+    df[new_name] <- ifelse(is.na(df[,new_name]), results, pull(df[new_name]))
   } else{
     # if user-defined new column doesn't exist just mutate a new column
     # pull the focal data from the points object and bind to original
     # df. !! and := notation is needed for dplyr to assign col name with a variable rather than a string
-    df %<>% dplyr::mutate(!!newName := dplyr::pull(dfPoints, fieldName))
+    df %<>% dplyr::mutate(!!new_name := dplyr::pull(df_points, field_name))
   }
+  df %<>% bind_rows(df_no_coords)
+
+  return(df)
 }
 
 
@@ -750,8 +935,8 @@ rev_geocode_insect <- function(df){
   api_key <- "AIzaSyBdXLWomxOy7h2F_q-PZPmvJ5tZ115N3X0"
 
   latlon <- df_coords[,colnames(df_coords) == "Lat" | colnames(df_coords) == "Lon"]
-  colnames(latlon)[colnames(latlon) == "Lat"] <- "decimalLatitude"
-  colnames(latlon)[colnames(latlon) == "Lon"] <- "decimalLongitude"
+  colnames(latlon)[colnames(latlon) == "Lat"] <- "lat"
+  colnames(latlon)[colnames(latlon) == "Lon"] <- "lon"
   elevation_query <- rgbif::elevation(input = latlon, key = api_key)
   df_coords$Elevation <- formatC(elevation_query$elevation, 0, format = "f")
 
@@ -784,56 +969,57 @@ rev_geocode_insect <- function(df){
 
 
 #' Rounds lat lon values based on sensible precision and manage formats
-#' based on accuracy information in the "coordinateUncertaintyInMeters" field
+#' based on accuracy information in an coordinate uncertainty field
+#' in meters
 #' @param df a database in SYMBIOTA format
 #' @return a dataframe with rounded lat lon values
 #' @export
 round_coords_cc <- function(df){
   # Make sure Lat/Lon associated columns are numeric
-  df$decimalLatitude <- as.numeric(df$decimalLatitude)
-  df$decimalLongitude <- as.numeric(df$decimalLongitude)
-  df$coordinateUncertaintyInMeters <- as.numeric(df$coordinateUncertaintyInMeters)
+  df$lat <- as.numeric(df$lat)
+  df$lon <- as.numeric(df$lon)
+  df$coordinate_uncertainty <- as.numeric(df$coordinate_uncertainty)
 
-  # Temporarily remove records with "NA" or no numbers in the coordinateUncertaintyInMeters field so they don't get processed
-  dfnoNumUncertainty <- df[grepl("^([^0-9]*)$", df$coordinateUncertaintyInMeters, perl = TRUE),]
-  dfNAUncertainty <- df[is.na(df$coordinateUncertaintyInMeters),]
-  df <- df[grepl("\\d", df$coordinateUncertaintyInMeters, perl = TRUE),]
+  # Temporarily remove records with "NA" or no numbers in the coordinate_uncertainty field so they don't get processed
+  dfnoNumUncertainty <- df[grepl("^([^0-9]*)$", df$coordinate_uncertainty, perl = TRUE),]
+  dfNAUncertainty <- df[is.na(df$coordinate_uncertainty),]
+  df <- df[grepl("\\d", df$coordinate_uncertainty, perl = TRUE),]
   # remove records without coords temporarily
-  dfNoCoords <- df %>% filter(is.na(decimalLatitude))
-  dfCoords <- df %>% filter(!is.na(decimalLatitude))
+  dfNoCoords <- df %>% filter(is.na(lat))
+  dfCoords <- df %>% filter(!is.na(lat))
 
   # ROUND LAT/LON TO APPROPRIATE VALUES BASED ON ACCURACY
   dfCoords['roundNum'] <- NA
-  dfCoords$roundNum[dfCoords$coordinateUncertaintyInMeters >= 1000] <- 2
-  dfCoords$roundNum[dfCoords$coordinateUncertaintyInMeters >= 100 & dfCoords$coordinateUncertaintyInMeters < 1000] <- 3
-  dfCoords$roundNum[dfCoords$coordinateUncertaintyInMeters >= 10 & dfCoords$coordinateUncertaintyInMeters < 100] <- 4
-  dfCoords$roundNum[dfCoords$coordinateUncertaintyInMeters < 10] <- 5
+  dfCoords$roundNum[dfCoords$coordinate_uncertainty >= 1000] <- 2
+  dfCoords$roundNum[dfCoords$coordinate_uncertainty >= 100 & dfCoords$coordinate_uncertainty < 1000] <- 3
+  dfCoords$roundNum[dfCoords$coordinate_uncertainty >= 10 & dfCoords$coordinate_uncertainty < 100] <- 4
+  dfCoords$roundNum[dfCoords$coordinate_uncertainty < 10] <- 5
   dfCoords$roundNum <- as.numeric(dfCoords$roundNum)
 
   # Overwrite rounded Lat/Lon results with original values
   results <- NA
   for(i in 1:nrow(dfCoords)){
-    results[[i]] <- formatC(dfCoords$decimalLatitude[i], dfCoords$roundNum[i], format = "f")
+    results[[i]] <- formatC(dfCoords$lat[i], dfCoords$roundNum[i], format = "f")
   }
-  dfCoords$decimalLatitude <- results
+  dfCoords$lat <- results
 
   results <- NA
   for(i in 1:nrow(dfCoords)){
-    results[[i]] <- formatC(dfCoords$decimalLongitude[i], dfCoords$roundNum[i], format = "f")
+    results[[i]] <- formatC(dfCoords$lon[i], dfCoords$roundNum[i], format = "f")
   }
-  dfCoords$decimalLongitude <- results
+  dfCoords$lon <- results
 
   # Delete columns that aren't needed
   dfCoords$roundNum <- NULL
-  dfCoords$decimalLatitude <- as.numeric(dfCoords$decimalLatitude)
-  dfCoords$decimalLongitude <- as.numeric(dfCoords$decimalLongitude)
+  dfCoords$lat <- as.numeric(dfCoords$lat)
+  dfCoords$lon <- as.numeric(dfCoords$lon)
 
   # Add back records that were removed pre-processing above and then re-sort database
   df <- bind_rows(dfCoords, dfNoCoords, dfNAUncertainty, dfnoNumUncertainty)
 
   # Format as character values so no funny business happens to Lat/Lon
-  df$decimalLatitude <- as.character(df$decimalLatitude)
-  df$decimalLongitude <- as.character(df$decimalLongitude)
+  df$lat <- as.character(df$lat)
+  df$lon <- as.character(df$lon)
 
   # Sort whatever column is necessary before returning output since I cut and pasted the df so much
   if("SpecimenCode" %in% colnames(df)){
@@ -916,25 +1102,32 @@ round_coords_insect <- function(df){
 
 
 
+
+
 ##### FUNCTIONS FOR WORKING WITH GBIF API #####
 #' function that makes manual edits based on a csv key before records are queried
 #' at gbif
 #' @param df a data frame
-#' @param bandAid a data frame
+#' @param band_aid a data frame
 #' @return a data frame
 #' @export
-pre_query_patchr <- function(df, bandAid){
-  bandAid %<>% select(scientificName, bandAidSciName)
+pre_query_patchr <- function(df, band_aid){
+
+  band_aid %<>% select(scientific_name, band_aid_sci_name)
+
   df %>%
-    left_join(bandAid, 'scientificName') %>%
+    left_join(band_aid, 'scientific_name') %>%
     mutate(
-      scientificName = case_when(
-        !is.na(bandAidSciName) ~ bandAidSciName,
-        TRUE ~ scientificName
+      scientific_name = case_when(
+        !is.na(band_aid_sci_name) ~ band_aid_sci_name,
+        TRUE ~ scientific_name
       )
     ) %>%
-    select(-bandAidSciName)
+    select(-band_aid_sci_name)
 }
+
+
+
 
 
 
@@ -970,23 +1163,23 @@ flatten_rgbif <- function(df, resultColumn){
 #' @export
 taxo_updatr <- function(df, dict){
   # join focal data frame to dictionary
-  df %<>% rename(originalSciName = scientificName) %>%
-    left_join(dict, by = 'originalSciName')
+  df %<>% rename(original_sci_name = scientific_name) %>%
+    left_join(dict, by = 'original_sci_name')
   # fill in gbif english common names only if we don't already have one
-  df$commonName <- ifelse(is.na(df$commonName), df$commonNameEng, df$commonName)
-  df %<>% select(-commonNameEng)
-  # check and warn how many scientificNames were updated
-  notChangedCount <- (df$scientificName == df$originalSciName) %>% sum(na.rm = TRUE)
-  changedCount <- nrow(df) - notChangedCount
-  message(changedCount, ' of ',  nrow(df), ' observations records were modified by the GBIF backbone taxonomy')
-  # check and warn how many scientificNames could not be found in the dictionary
-  noMatch <- df %>% filter(is.na(scientificName))
-  message(nrow(noMatch), ' records were unable to be found in the dictionary and will be removed')
+  df$common_name <- ifelse(is.na(df$common_name), df$common_name_eng, df$common_name)
+  df %<>% select(-common_name_eng)
+  # check and warn how many scientific_names were updated
+  not_changed_count <- (df$scientific_name == df$original_sci_name) %>% sum(na.rm = TRUE)
+  changed_count <- nrow(df) - not_changed_count
+  message(changed_count, ' of ',  nrow(df), ' observations records were modified by the GBIF backbone taxonomy')
+  # check and warn how many scientific_names could not be found in the dictionary
+  no_match <- df %>% filter(is.na(scientific_name))
+  message(nrow(no_match), ' records were unable to be found in the dictionary and will be removed')
   # reorder columns—note that the contains() function can be used if the column may or may not exist
   df %<>%
-    relocate(scientificName, originalSciName, rank, kingdom, phylum, class, order,
+    relocate(scientific_name, original_sci_name, rank, kingdom, phylum, class, order,
              family, contains('subfamily'), genus, contains('binomial')) %>%
-    relocate(commonNameSpa, .after = commonName)
+    relocate(common_name_spa, .after = common_name)
   return(df)
 }
 
@@ -1005,10 +1198,10 @@ common_namer <- function(df){
   if(length(df$usageKey) > 0){
     # if the English common name column already exists, filter only entries that aren't filled in to save time
     # and temporarily remove those columns so they can be re-added from the gbif query later
-    if('commonNameEng' %in% names(df)){
-      commonNameYes <- df %>% filter(!is.na(commonNameEng))
-      df %<>% filter(is.na(commonNameEng))
-      df %<>% select(-commonNameEng, -commonNameSpa)
+    if('common_name_eng' %in% names(df)){
+      common_nameYes <- df %>% filter(!is.na(common_name_eng))
+      df %<>% filter(is.na(common_name_eng))
+      df %<>% select(-common_name_eng, -common_name_spa)
     }
     # remove records that do not have a usage key anyway
     sciNameNo <- df %>% filter(is.na(usageKey))
@@ -1021,59 +1214,59 @@ common_namer <- function(df){
     vernacularQuery <- v_name_usage(keyVec, data = 'vernacularNames')
 
     # create a template before initiating the loop
-    commonNames <- vernacularQuery[[1]]$data[0,]
+    common_names <- vernacularQuery[[1]]$data[0,]
     # create a for loop to extract common names from the nested data structure returned by name_usage()
     for(i in 1:length(vernacularQuery)){
-      commonNames <- vernacularQuery[[i]]$data %>% bind_rows(commonNames)
+      common_names <- vernacularQuery[[i]]$data %>% bind_rows(common_names)
     }
 
     # check if taxonNames column exists before proceeding (if it doesn't there was no data returned from gbif)
-    if("taxonKey" %in% names(commonNames)){
-      commonNames %<>% select(taxonKey, vernacularName, language, source, any_of("preferred")) # select columns I need
-      commonNames %<>% filter(language == 'eng' | language == 'spa') # filter languages I want
+    if("taxonKey" %in% names(common_names)){
+      common_names %<>% select(taxonKey, vernacularName, language, source, any_of("preferred")) # select columns I need
+      common_names %<>% filter(language == 'eng' | language == 'spa') # filter languages I want
 
 
       # sort by priority so the slice command that remove the first row for each group will get the best common name entry
-      if("preferred" %in% names(commonNames)){ # check if preferred column exists in output and use if it is
-        commonNames$preferred %<>% as.character() %>% replace_na('none') # replace NA in preferred field so I can sort and prioritize
-        commonNames$preferred <- factor(commonNames$preferred, levels = c('TRUE', 'none', 'FALSE' ))
-        commonNames %<>% arrange(taxonKey, language, preferred)
+      if("preferred" %in% names(common_names)){ # check if preferred column exists in output and use if it is
+        common_names$preferred %<>% as.character() %>% replace_na('none') # replace NA in preferred field so I can sort and prioritize
+        common_names$preferred <- factor(common_names$preferred, levels = c('TRUE', 'none', 'FALSE' ))
+        common_names %<>% arrange(taxonKey, language, preferred)
       } else{
-        commonNames %<>% arrange(taxonKey, language)
+        common_names %<>% arrange(taxonKey, language)
       }
 
       # slice records so there is one common name for each language for each record
-      commonNames %<>% group_by(taxonKey, language) %>% slice(1) %>% ungroup() %>%
+      common_names %<>% group_by(taxonKey, language) %>% slice(1) %>% ungroup() %>%
         select(-source)
 
       # check if preferred column exists in output and remove it if it is
-      commonNames %<>% select(-any_of("preferred"))
+      common_names %<>% select(-any_of("preferred"))
 
       # split data frames by language and clean for joining to ocurrence records
-      commonNamesEng <- commonNames %>% filter(language == 'eng') %>% select(-language) %>%
-        rename(usageKey = taxonKey, commonNameEng = vernacularName)
-      commonNamesSpa <- commonNames %>% filter(language == 'spa') %>% select(-language) %>%
-        rename(usageKey = taxonKey, commonNameSpa = vernacularName)
+      common_namesEng <- common_names %>% filter(language == 'eng') %>% select(-language) %>%
+        rename(usageKey = taxonKey, common_name_eng = vernacularName)
+      common_namesSpa <- common_names %>% filter(language == 'spa') %>% select(-language) %>%
+        rename(usageKey = taxonKey, common_name_spa = vernacularName)
       # join common name query results to where they match to the occurrence records
       df %<>% mutate_all(as.character)
-      commonNamesEng %<>% mutate_all(as.character)
-      commonNamesSpa %<>% mutate_all(as.character)
+      common_namesEng %<>% mutate_all(as.character)
+      common_namesSpa %<>% mutate_all(as.character)
 
-      df %<>% left_join(commonNamesEng, by = 'usageKey') %>%
-        left_join(commonNamesSpa, by = 'usageKey')
-      rm(keyVec, vernacularQuery, commonNames, commonNamesEng, commonNamesSpa)
+      df %<>% left_join(common_namesEng, by = 'usageKey') %>%
+        left_join(common_namesSpa, by = 'usageKey')
+      rm(keyVec, vernacularQuery, common_names, common_namesEng, common_namesSpa)
       # standardize the casing of common names which are inconsistently formatted in GBIF
       # English
-      df$commonNameEng %<>% str_to_title() # first convert names to title case to streamline
-      df$commonNameEng <- gsub('-(\\w)', '-\\L\\1', df$commonNameEng, perl = TRUE) # lower the case after hyphen
+      df$common_name_eng %<>% str_to_title() # first convert names to title case to streamline
+      df$common_name_eng <- gsub('-(\\w)', '-\\L\\1', df$common_name_eng, perl = TRUE) # lower the case after hyphen
       # Spanish
-      df$commonNameSpa %<>% str_to_title() # first convert names to title case to streamline
-      df$commonNameSpa <- gsub('-(\\w)', '-\\L\\1', df$commonNameSpa, perl = TRUE) # lower the case after hyphen
-      df$commonNameSpa <- gsub(' De ', ' de ', df$commonNameSpa, perl = TRUE) # lower the case of the word 'de' in spanish
-      df$commonNameSpa <- gsub(' Del ', ' del ', df$commonNameSpa, perl = TRUE) # lower the case of the word 'de' in spanish
+      df$common_name_spa %<>% str_to_title() # first convert names to title case to streamline
+      df$common_name_spa <- gsub('-(\\w)', '-\\L\\1', df$common_name_spa, perl = TRUE) # lower the case after hyphen
+      df$common_name_spa <- gsub(' De ', ' de ', df$common_name_spa, perl = TRUE) # lower the case of the word 'de' in spanish
+      df$common_name_spa <- gsub(' Del ', ' del ', df$common_name_spa, perl = TRUE) # lower the case of the word 'de' in spanish
     }
     # recombine rows that may have been removed
-    if(exists('commonNameYes')){df %<>% bind_rows(commonNameYes)}
+    if(exists('common_nameYes')){df %<>% bind_rows(common_nameYes)}
     if(exists('sciNameNo')){df %<>% bind_rows(sciNameNo)}
     return(df)
   }
@@ -1083,7 +1276,7 @@ common_namer <- function(df){
 
 ##### WORKING WITH TAXONOMY HEIRARCHY #####
 
-#' Function that removes higher linnean rank names from the scientificName column
+#' Function that removes higher linnean rank names from the scientific_name column
 #' if the are already represented by lower ranked names, for example, removing
 #' 'Lepidoptera' if 'Danaus plexippus' already exists in the same column.
 #' @param df a dataframe
@@ -1107,8 +1300,8 @@ higher_rank_remover <- function(df, rankList){
       removeList <- c(removeList, sort(unlist(dfSubset[j], use.names = F)))
     }
     removeList %<>% sort() %>% unique() # collapse to distinct values
-    remove <- df %>% filter(scientificName %in% removeList)
-    df %<>% filter(!scientificName %in% removeList)
+    remove <- df %>% filter(scientific_name %in% removeList)
+    df %<>% filter(!scientific_name %in% removeList)
     return(df)
   }
 }
@@ -1123,29 +1316,29 @@ linnean_releveler <- function(df){
   # forcats::relevel() function is important to reorder factor levels because base R will erase factors
   # that are not explicitly stated and I don't want to lose new taxonomic levels that arrive in future data
   # just because I don't state their order
-  kingdomSort <- c("Animalia", "Plantae", "Fungi", "Protozoa", "incertae sedis")
-  phylumSort <- c("Chordata", "Arthropoda", "Mollusca", "Ascomycota", "Basidiomycota", "Tracheophyta", "Rhodophyta")
-  classSort <- c("Mammalia", "Aves", "Reptilia", "Amphibia", "Actinopterygii", "Elasmobranchii", "Cephalaspidomorphi",
-                 "Insecta", "Arachnida", "Malacostraca", "Magnoliopsida",  "Pinopsida", "Gnetopsida", "Liliopsida",
-                 "Polypodiopsida", "Lycopodiopsida")
+  kingdom_sort <- c("Animalia", "Plantae", "Fungi", "Protozoa", "incertae sedis")
+  phylum_sort <- c("Chordata", "Arthropoda", "Mollusca", "Ascomycota", "Basidiomycota", "Tracheophyta", "Rhodophyta")
+  class_sort <- c("Mammalia", "Aves", "Reptilia", "Amphibia", "Actinopterygii", "Elasmobranchii", "Cephalaspidomorphi",
+                  "Insecta", "Arachnida", "Malacostraca", "Magnoliopsida",  "Pinopsida", "Gnetopsida", "Liliopsida",
+                  "Polypodiopsida", "Lycopodiopsida")
 
   # remove entries from the sort list that are not in the focal data frame to avoid warnings of missing factors
-  kingdomSort <- kingdomSort[kingdomSort %in% as.character(unique(df$kingdom))]
-  phylumSort <- phylumSort[phylumSort %in% as.character(unique(df$phylum))]
-  classSort <- classSort[classSort %in% as.character(unique(df$class))]
+  kingdom_sort <- kingdom_sort[kingdom_sort %in% as.character(unique(df$kingdom))]
+  phylum_sort <- phylum_sort[phylum_sort %in% as.character(unique(df$phylum))]
+  class_sort <- class_sort[class_sort %in% as.character(unique(df$class))]
 
   # convert Linnean taxonomic ranks to factors and relevel factor entries according to sort lists
-  df$kingdom %<>% as_factor() %>% fct_relevel(kingdomSort)
-  df$phylum %<>% as_factor() %>% fct_relevel(phylumSort)
-  df$class %<>% as_factor() %>% fct_relevel(classSort)
+  df$kingdom %<>% as_factor() %>% fct_relevel(kingdom_sort)
+  df$phylum %<>% as_factor() %>% fct_relevel(phylum_sort)
+  df$class %<>% as_factor() %>% fct_relevel(class_sort)
   df$order %<>% as_factor() # for now don't have any sorting priorities for order
   # sorting by family (only have data for birds)
-  ebirdKey <- read_csv_char(pathEbirdTakonKey) # read in ebird key to get family taxonomy sorting
+  ebirdKey <- read_csv_char(fp_ebird_takon_key) # read in ebird key to get family taxonomy sorting
   ebirdKey$famOrder %<>% as.integer()
-  familySort <- ebirdKey %>% arrange(famOrder) %>% distinct(family) %>% filter(!is.na(family)) %>% pull()
+  family_sort <- ebirdKey %>% arrange(famOrder) %>% distinct(family) %>% filter(!is.na(family)) %>% pull()
   rm(ebirdKey)
-  familySort <- familySort[familySort %in% df$family] # pull out only ebird taxa that are in the dfionary
-  df$family %<>% as_factor() %>% fct_relevel(familySort) # make family a sorted factor like other ranks above
+  family_sort <- family_sort[family_sort %in% df$family] # pull out only ebird taxa that are in the dfionary
+  df$family %<>% as_factor() %>% fct_relevel(family_sort) # make family a sorted factor like other ranks above
   return(df)
 }
 
@@ -1644,10 +1837,10 @@ find_max_sc <- function(cc.code, db_sc){
 
 
 
-# function that adds brackets appropriately around lists that are nested in each element in a column
-#' @return a modified data frame
+#' function that adds brackets appropriately around lists that are nested in each element in a column
 #' @param column a data frame column
 #' @export
+#' @return a modified data frame
 bracketr <- function(column){
   library(glue)
   column <- str_split(column, ",")
@@ -1660,6 +1853,7 @@ bracketr <- function(column){
 
 
 
+
 #' This function produces the 'prefix' file necessary to preface MediaWiki subsequently
 #' uploaded content with a <noinclude> tag. This is a silly 'hack' file that needs
 #' to be uploaded before the template calls on the data pages so that the calls are
@@ -1669,11 +1863,11 @@ bracketr <- function(column){
 #' @param title the column that contains the names of wiki pages to be processed
 #' @param output_path the path to save the prefix file which will later be uploaded to a MediaWiki instance
 #' @export
-include_only_prefix_maker <- function(df, title = Title, output_path){
+include_only_prefix_maker <- function(df, title = "Title", output_path){
   df %>%
     select({{title}}) %>%
-    mutate(`Free Text` = "<includeonly>")
-  write_csv(df, output_path, na = "")
+    mutate(`Free Text` = "<includeonly>") %>%
+    write_csv(output_path, na = "")
 }
 
 
@@ -1713,18 +1907,7 @@ lua_dict_builder <- function(df, col_vec){
 
 
 
-#'function that adds brackets appropriately around lists that are nested in each element in a column
-#' @param column a data frame column
-#' @export
-bracketr <- function(column){
-  library(glue)
-  column <- str_split(column, ",")
-  column <- lapply(column, glue_collapse, sep = "]], [[")
-  column <- gsub("^", "[[", column)
-  column <- gsub("$", "]]", column)
-  column %<>% str_remove_all("\\[\\[\\]\\]")
-  return(column)
-}
+
 
 
 
@@ -1857,7 +2040,7 @@ taxon.summ.by.type <- function(filled.cl, type, taxon.rank){
   summ.df <- filled.cl %>%
     filter(type == type) %>%
     group_by(taxon.rank) %>%
-    summarize(Observed = sum(!is.na(eventDate)), Total = n(), Percent = round(Observed / Total * 100, 0))
+    summarize(Observed = sum(!is.na(date)), Total = n(), Percent = round(Observed / Total * 100, 0))
 }
 
 
@@ -1919,9 +2102,9 @@ clean_ent_label <- function(label_inbox){
 
   # Customize habitat, microhabitats and methods and how they go on the label
 
-  label_inbox %<>% mutate(Habitat = case_when(
-    is.na(label_inbox$Method) & is.na(label_inbox$Microhabitat) ~ paste0(label_inbox$Habitat),
-    TRUE ~ paste0(label_inbox$Habitat,", ")
+  label_inbox %<>% mutate(habitat = case_when(
+    is.na(label_inbox$Method) & is.na(label_inbox$Microhabitat) ~ paste0(label_inbox$habitat),
+    TRUE ~ paste0(label_inbox$habitat,", ")
   )
   )
 
@@ -2064,7 +2247,7 @@ write_latex_labels <- function(label_inbox){
                label_inbox$DatesCollected[i], label_inbox$Code[i], "}\\"))
     cat(paste0("\n"))
     cat(paste0("\n"))
-    cat(paste0("\\insectlabel{", label_inbox$Habitat[i], label_inbox$micro_method[i], "}"))
+    cat(paste0("\\insectlabel{", label_inbox$habitat[i], label_inbox$micro_method[i], "}"))
     cat(paste0("\n"))
     cat(paste0("\n"))
     sink()
@@ -2077,12 +2260,4 @@ write_latex_labels <- function(label_inbox){
   system('xelatex insect_label.tex')
   setwd('../../')
 }
-
-
-
-
-
-
-
-
 

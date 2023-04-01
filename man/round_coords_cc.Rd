@@ -3,7 +3,8 @@
 \name{round_coords_cc}
 \alias{round_coords_cc}
 \title{Rounds lat lon values based on sensible precision and manage formats
-based on accuracy information in the "coordinateUncertaintyInMeters" field}
+based on accuracy information in an coordinate uncertainty field
+in meters}
 \usage{
 round_coords_cc(df)
 }
@@ -15,5 +16,6 @@ a dataframe with rounded lat lon values
 }
 \description{
 Rounds lat lon values based on sensible precision and manage formats
-based on accuracy information in the "coordinateUncertaintyInMeters" field
+based on accuracy information in an coordinate uncertainty field
+in meters
 }

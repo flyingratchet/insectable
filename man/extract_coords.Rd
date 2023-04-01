@@ -7,7 +7,7 @@
 extract_coords(records, timeCoords, timezone)
 }
 \arguments{
-\item{records}{a data frame of occurence records that contains decimalLatitude and decimalLongitude columns}
+\item{records}{a data frame of occurence records that contains lat and lon columns}
 
 \item{timeCoords}{a csv of coordinates with time stamps usually from gps unit}
 

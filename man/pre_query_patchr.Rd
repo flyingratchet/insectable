@@ -5,12 +5,12 @@
 \title{function that makes manual edits based on a csv key before records are queried
 at gbif}
 \usage{
-pre_query_patchr(df, bandAid)
+pre_query_patchr(df, band_aid)
 }
 \arguments{
 \item{df}{a data frame}
 
-\item{bandAid}{a data frame}
+\item{band_aid}{a data frame}
 }
 \value{
 a data frame

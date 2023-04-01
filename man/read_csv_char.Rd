@@ -3,7 +3,7 @@
 \name{read_csv_char}
 \alias{read_csv_char}
 \title{wrapper for readr::read_csv that forces all cols to character
-which also avoids the very stupid erroneous auto-guessing errors stemming from
+which also avoids the erroneous auto-guessing errors stemming from
 fields which have too many NA's in their records}
 \usage{
 read_csv_char(csv_path)
@@ -13,6 +13,6 @@ read_csv_char(csv_path)
 }
 \description{
 wrapper for readr::read_csv that forces all cols to character
-which also avoids the very stupid erroneous auto-guessing errors stemming from
+which also avoids the erroneous auto-guessing errors stemming from
 fields which have too many NA's in their records
 }

@@ -5,16 +5,16 @@
 \title{This function attaches desired data from a shapefile to a Symbiota formatted
 data frame.}
 \usage{
-rev_geocode(df, poly, fieldName, newName)
+rev_geocode(df, poly, field_name, new_name)
 }
 \arguments{
 \item{df}{a Symbiota formatted database}
 
 \item{poly}{a simple feature formatted shapefile of polygons}
 
-\item{fieldName}{The name of the single field in the shapefile you want to extract}
+\item{field_name}{The name of the single field in the shapefile you want to extract}
 
-\item{newName}{User-defined new name for the newly attached field in the dataframe}
+\item{new_name}{User-defined new name for the newly attached field in the dataframe}
 }
 \value{
 returns a database with desired column from the shapefile attached

@@ -2,8 +2,8 @@
 % Please edit documentation in R/insectable.R
 \name{munge_gpx}
 \alias{munge_gpx}
-\title{Reads in gpx files recursively from a designated path and assembles and formats one exhuative dataframe with just location
-and time stamps sorted in order of occurence}
+\title{Reads in gpx files recursively from a designated path and assembles and formats one
+exhaustive dataframe with just location and time stamps sorted by time}
 \usage{
 munge_gpx(path)
 }
@@ -14,6 +14,6 @@ munge_gpx(path)
 a data frame of coords and time stamps for all gpx files specified
 }
 \description{
-Reads in gpx files recursively from a designated path and assembles and formats one exhuative dataframe with just location
-and time stamps sorted in order of occurence
+Reads in gpx files recursively from a designated path and assembles and formats one
+exhaustive dataframe with just location and time stamps sorted by time
 }

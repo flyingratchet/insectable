@@ -3,7 +3,7 @@
 \name{find_elevation}
 \alias{find_elevation}
 \title{Populate elevation using the geonames server based on
-decimalLatitutde and decimalLongitude columns in a dataframe
+lat and lon columns in a dataframe
 # I obtained my username (which is 'roverso') from here to validate the elevation lookup request
 http://www.geonames.org/export/web-services.html}
 \usage{
@@ -17,7 +17,7 @@ a dataframe with rounded lat lon values
 }
 \description{
 Populate elevation using the geonames server based on
-decimalLatitutde and decimalLongitude columns in a dataframe
+lat and lon columns in a dataframe
 # I obtained my username (which is 'roverso') from here to validate the elevation lookup request
 http://www.geonames.org/export/web-services.html
 }
