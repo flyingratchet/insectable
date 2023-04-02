@@ -32,7 +32,7 @@ symb_tidy_rosetta <- function(df, direction = "forward"){
   key <- c(
     lat = "decimal_latitude",
     lon = "decimal_longitude",
-    minimum_elevation = "minimumElevationInMeters",
+    minimum_elevation = "minimum_elevation_in_meters",
     coordinate_uncertainty = "coordinate_uncertainty_in_meters",
     date = "event_date"
   )
