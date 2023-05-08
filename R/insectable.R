@@ -300,6 +300,134 @@ write_csv_critter <- function(df, csv_path){
 
 
 
+#' Creates latex source data files for each unique class in a data frame.
+#' @param df a data frame
+#' @param rank a string list representing a linnean rank system
+#' @param fp_out a file path for the latex output to export to
+#' @export
+make_latex_source <- function(df, rank_vec, fp_out){
+
+  # remove NA's from common names and replace with blanks for formatting
+  df %<>% mutate(common_name = replace_na(common_name, ""))
+
+  # remove potential erroneous records with no scientific name
+  df %<>% filter(!is.na(scientific_name))
+
+  print_df <- df # preserve original copy (df) so the other can be modified for printing format
+
+  # create a counts by taxon table to insert into the output
+  counts_taxa <- print_df %>% select(all_of(rank_vec)) %>% mutate(across(everything(), as.character)) %>%
+    gather() %>% group_by(value) %>% count() %>% filter(!is.na(value)) %>% rename(scientific_name = value, count = n)
+
+  # bind these counts to the main table
+  print_df %<>% left_join(counts_taxa, by = "scientific_name") %>% relocate(count, .after = scientific_name)
+
+  # expand records into a dummy table for formatting the LaTeX summary output where each Linnean hierarchy present
+  # is unpacked across rows to mimic the structure of the Latex document. Note that the blank NA fields are important for
+  # sorting below
+  print_df %<>% mutate(across(everything(), as.character))
+  print_dfk <- print_df %>%
+    distinct(kingdom, .keep_all = T) %>%  filter(!is.na(kingdom)) %>%
+    mutate(rank = "kingdom", phylum = NA, class = NA, order = NA, family = NA, genus = NA, specificEpithet = NA, scientific_name = NA, originalSciName = NA)
+  print_dfp <- print_df %>%
+    distinct(phylum, .keep_all = T) %>%  filter(!is.na(phylum)) %>%
+    mutate(rank = "phylum", class = NA, order = NA, family = NA, genus = NA, specificEpithet = NA, scientific_name = NA, originalSciName = NA)
+  print_dfc <- print_df %>%
+    distinct(class, .keep_all = T) %>% filter(!is.na(class)) %>%
+    mutate(rank = "class", order = NA, family = NA, genus = NA, specificEpithet = NA, scientific_name = NA, originalSciName = NA)
+  # note that for order I remove vertebrate entries as they are unecessary
+  print_dfo <- print_df %>% distinct(order, .keep_all = T) %>% filter(!is.na(order)) %>% filter(phylum != "Chordata") %>%
+    mutate(rank = "order",family = NA, genus = NA, specificEpithet = NA, scientific_name = NA, originalSciName = NA)
+  print_dff <- print_df %>% distinct(family, .keep_all = T) %>% filter(!is.na(family)) %>%
+    mutate(rank = "family", genus = NA, specificEpithet = NA, scientific_name = NA, originalSciName = NA)
+  # grabs only the genera that are not represented by a binomial to avoid redundancy
+  print_dfg <- print_df %>% distinct(genus, .keep_all = T) %>% filter(!is.na(genus) & rank != "species") %>%
+    mutate(rank = "genus", specificEpithet = NA, scientific_name = NA, originalSciName = NA)
+  print_dfs <- print_df %>% filter(rank == "species")
+
+  # this was necessary to force everything to character before binding the data frames toegether
+  print_df_list <- list(print_dfk, print_dfp, print_dfc, print_dfo, print_dff, print_dfg, print_dfs)
+  print_df_list <- map(print_df_list, ~ mutate_all(.x, as.character))
+  # bind the above together and arrange data frame in the way it will be printed with LaTeX
+  print_df <- bind_rows(print_df_list) %>%
+    arrange(!is.na(kingdom), kingdom, !is.na(phylum), phylum, !is.na(class), class, !is.na(order), order,
+            !is.na(family), family, !is.na(family), family, !is.na(genus), genus)
+  rm(print_dfk, print_dfp, print_dfc, print_dfo, print_dff, print_dfg, print_dfs)
+
+  # apply the custom function to each row using rowwise() to extract the lowest taxon name for the sci name
+  print_df %<>% na_skipper(rank_vec)
+
+  # mutate the formatting for the LaTeX document arylideyellow
+  print_df <- print_df %>% mutate(
+    for_latex = case_when(
+      rank == "kingdom" ~ paste0("{\\section*{\\textcolor{black}{", kingdom, "}}}"),
+      rank == "phylum" ~ paste0("{\\section*{\\textcolor{gray}{", phylum, "}}}"),
+      rank == "class" ~ paste0("{\\section*{\\textcolor{bdazzledblue}{", class, "}}}"),
+      rank == "order" ~ paste0("{\\subsection*{\\textcolor{arylideyellow}{", order, "}}}"),
+      rank == "family" & !is.na(family_common) ~ paste0("{\\subsubsection*{", family, " (", print_df$family_common, ")}}"),
+      rank == "family" & is.na(family_common) ~ paste0("{\\subsubsection*{", family, "}}"),
+      rank == "genus" ~ paste0(common_name, " {\\scriptsize{\\textit{", genus, "} sp. }}"),
+      rank == "species" & kingdom == "Animalia" ~ paste0(common_name, " {\\scriptsize{\\textit{", scientific_name, "}}}"),
+      rank == "species" & kingdom == "Plantae" ~ paste0("{\\textit{", scientific_name, "}} {\\scriptsize{", common_name, "}}"),
+      TRUE ~ paste0(scientific_name, "")
+    )
+  ) %>% relocate(for_latex, .before = rank)
+
+  # remove sci-names from ambiguous sightings
+  print_df$for_latex <- ifelse(grepl("/", print_df$common_name), print_df$common_name, print_df$for_latex)
+
+  # reduce the size of common name descriptions that are inside parentheses—like "Budgerigar (Domestic type)" to save space
+  print_df$for_latex <- gsub("\\(.*?\\) ", "", print_df$for_latex)
+
+  # mark cultivated species with an asterisk
+  print_df %<>% mutate(
+    for_latex = case_when(
+      rank == "species" && degree_of_establishment == "cultivated" ~ paste0(print_df$for_latex, "*"), # mark cultivated
+      TRUE ~ for_latex
+    )
+  )
+
+  # add in latex syntax to highlight introduced and expired records (especially for Home Compendium)
+
+  ltGray <- "\\textcolor[HTML]{DFDBD2}"
+  # DFDBD2 light gray color
+  # aa381e brick red color
+  # EED4CE light pink color
+
+  print_df %<>%
+    mutate(
+      for_latex = case_when(
+        # note: native and recent is the default black
+        rank == "species" & establishment_means == "native" & record_expired == "TRUE" ~ paste0("\\textcolor[HTML]{DFDBD2}{", print_df$for_latex, "}"), # native and expired
+        rank == "species" & establishment_means == "introduced" & is.na(record_expired) ~ paste0("\\textcolor[HTML]{aa381e}{", print_df$for_latex, "}"), # non-native and recent
+        rank == "species" & establishment_means == "introduced" & !is.na(record_expired) ~ paste0("\\textcolor[HTML]{EED4CE}{", print_df$for_latex, "}"), # non-native and expired
+        TRUE ~ for_latex
+      )
+    )
+
+  # add a line return for each line in the document
+  print_df$for_latex <- paste0(print_df$for_latex, "\n")
+
+
+  # write the main output file for LaTeX
+  # remove file if it exists
+  if(fs::file_exists(fp_out)){
+    fs::file_delete(fp_out)
+  }
+
+
+  # write to file
+  # first write preface to pull in species count data
+  sink(fp_out)
+  cat(print_df$for_latex)
+  sink()
+}
+
+
+
+
+
+
 
 
 
