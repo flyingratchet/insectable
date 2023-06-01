@@ -9,14 +9,6 @@
     ]
   },
   "Packages": {
-    "BH": {
-      "Package": "BH",
-      "Version": "1.78.0-0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "4e348572ffcaa2fb1e610e7a941f6f3a",
-      "Requirements": []
-    },
     "DBI": {
       "Package": "DBI",
       "Version": "1.1.1",
@@ -160,6 +152,19 @@
       "Hash": "ebaa97ac99cc2daf04e77eecc7b781d7",
       "Requirements": []
     },
+    "clock": {
+      "Package": "clock",
+      "Version": "0.6.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "db6b0e88fa092982ecf56322b47be0fe",
+      "Requirements": [
+        "cpp11",
+        "rlang",
+        "tzdb",
+        "vctrs"
+      ]
+    },
     "colorspace": {
       "Package": "colorspace",
       "Version": "2.1-0",
@@ -167,17 +172,6 @@
       "Repository": "CRAN",
       "Hash": "f20c47fd52fae58b4e377c37bb8c335b",
       "Requirements": []
-    },
-    "conditionz": {
-      "Package": "conditionz",
-      "Version": "0.1.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "94d63622fa8251219092b34de47a4136",
-      "Requirements": [
-        "R6",
-        "uuid"
-      ]
     },
     "cpp11": {
       "Package": "cpp11",
@@ -281,6 +275,14 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "8106d78941f34855c440ddb946b8f7a5",
+      "Requirements": []
+    },
+    "fs": {
+      "Package": "fs",
+      "Version": "1.6.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "f4dcd23b67e33d851d2079f703e8b985",
       "Requirements": []
     },
     "generics": {
@@ -612,13 +614,12 @@
     },
     "rgbif": {
       "Package": "rgbif",
-      "Version": "3.7.0",
+      "Version": "3.7.7",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "f3aaa776474a9a2d7285dd6b8e1dfdf0",
+      "Hash": "36b18bc6e68a3336c26778e36ab57308",
       "Requirements": [
         "R6",
-        "conditionz",
         "crul",
         "data.table",
         "ggplot2",
@@ -627,8 +628,8 @@
         "magrittr",
         "oai",
         "tibble",
-        "wellknown",
         "whisker",
+        "wk",
         "xml2"
       ]
     },
@@ -826,14 +827,6 @@
       "Hash": "1fe17157424bb09c48a8b3b550c753bc",
       "Requirements": []
     },
-    "uuid": {
-      "Package": "uuid",
-      "Version": "1.0-3",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "2097822ba5e4440b81a0c7525d0315ce",
-      "Requirements": []
-    },
     "vctrs": {
       "Package": "vctrs",
       "Version": "0.5.2",
@@ -876,19 +869,6 @@
         "tzdb",
         "vctrs",
         "withr"
-      ]
-    },
-    "wellknown": {
-      "Package": "wellknown",
-      "Version": "0.7.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "5508d2da9b514f2214357cec1d4df46a",
-      "Requirements": [
-        "BH",
-        "Rcpp",
-        "jsonlite",
-        "wk"
       ]
     },
     "whisker": {

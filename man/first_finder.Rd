@@ -11,7 +11,7 @@ first_finder(x)
 \item{x}{a vector}
 }
 \value{
-the value of the firt non-blank entry in the vector
+the value of the first non-blank entry in the vector
 }
 \description{
 Function that finds the first non-blank entry in a vector for use with dplyr::rowwise()

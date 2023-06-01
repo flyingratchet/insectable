@@ -2,10 +2,10 @@
 % Please edit documentation in R/insectable.R
 \name{flatten_rgbif}
 \alias{flatten_rgbif}
-\title{Flattens the nested structure of a rgbif backbone_name() query
+\title{Flattens the nested structure of a rgbif backbone_name query
 and streamlines other inconsistencies in data structure}
 \usage{
-flatten_rgbif(df, resultColumn)
+flatten_rgbif(df, result_column)
 }
 \arguments{
 \item{df}{a df with a column that contains nested query response}
@@ -16,6 +16,6 @@ flatten_rgbif(df, resultColumn)
 a data frame
 }
 \description{
-Flattens the nested structure of a rgbif backbone_name() query
+Flattens the nested structure of a rgbif backbone_name query
 and streamlines other inconsistencies in data structure
 }

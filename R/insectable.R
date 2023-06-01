@@ -724,20 +724,6 @@ lookup_common_name <-function(df, checklist){
 #' @param crs a projection system
 #' @return a data frame with records filtered based on falling inside the focal polygon
 #' @export
-
-
-
-# df <- dbCritter
-# poly <- sfFishCreek
-# crs <- 4326
-# results_col <- "compendium"
-# lat <- "lat"
-# lon <- "lon"
-# tag <- "fishCreek"
-
-
-
-
 tag_by_poly <- function(df, poly, lat = "lat", lon = "lon", crs, results_col = "results", tag){
 
 
@@ -1259,22 +1245,22 @@ pre_query_patchr <- function(df, band_aid){
 
 
 
-#' Flattens the nested structure of a rgbif backbone_name() query
+#' Flattens the nested structure of a rgbif backbone_name query
 #'and streamlines other inconsistencies in data structure
 #' @param df a df with a column that contains nested query response
 #' @param resultColumn name of result column with response from rgbif::backbone_name()
 #' @return a data frame
 #' @export
-flatten_rgbif <- function(df, resultColumn){
-  if(!is_empty(df[[resultColumn]])){ # check that nested structure is not empty
-    df %<>% bind_cols(df[[resultColumn]])
+flatten_rgbif <- function(df, result_column){
+  if(!is_empty(df[[result_column]])){ # check that nested structure is not empty
+    df %<>% bind_cols(df[[result_column]])
     # if there are no species-level results returned—this creates a blank species
     # column so code doesn't break below
     if(!'species' %in% names(df)){
       df$species <- NA
-      df$speciesKey <- NA
+      df$species_key <- NA
     }
-    df[[resultColumn]] <- NULL # remove nested results
+    df[[result_column]] <- NULL # remove nested results
     return(df)
   }
 }
@@ -1419,7 +1405,8 @@ higher_rank_remover <- function(df, rankList){
     # split out data set based on current level
     dfSubset <- filter(df, rank == rankList[i])
     focalCols <- rankList[(i + 1):rankLength]
-    dfSubset %<>% select(focalCols)
+    # subset focal cols and convert to character
+    dfSubset %<>% select(focalCols) %>% mutate(across(everything(), as.character))
 
     # this little loop inside a loop—probably can be written more efficiently but it basically just collapses
     # the whole data frame into a vector of unique values so they can be used to filter the database
@@ -1472,6 +1459,16 @@ linnean_releveler <- function(df){
 
 
 
+
+
+
+
+
+
+#'####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+#'####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+#'####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+#'####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
 #' Given a dataframe and taxonomic rank vector—function (sorted highest to lowest) this function
 #'will mutate the column 'lowestRank' which will contain the lowest non-NA taxon value among the
 #'columns specified. Note that the syms() function is required to convert strings to variables
@@ -1490,6 +1487,13 @@ lowTaxonFinder <- function(df, rankVec){
   relocateSpot <- rankVec[1]
   df %<>% cbind(lowestRank = df2$lowestRank) %>% relocate(lowestRank, .before = all_of(relocateSpot))
 }
+
+
+
+
+
+
+
 
 
 
@@ -1514,12 +1518,16 @@ pasteSansNA <- function(..., sep = ", ") {
 
 
 
+
 #' Function that finds the first non-blank entry in a vector for use with dplyr::rowwise()
 #' The suppressWarnings is for warnings when their are no elements in the vector
 #' @param x a vector
-#' @return the value of the firt non-blank entry in the vector
+#' @return the value of the first non-blank entry in the vector
 #' @export
 first_finder <- function(x){x[suppressWarnings(min(which(!is.na(x))))]}
+
+
+
 
 
 #' Given a dataframe and vector of column names ranked in the order of highest to lowest priority,

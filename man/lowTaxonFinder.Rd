@@ -2,7 +2,11 @@
 % Please edit documentation in R/insectable.R
 \name{lowTaxonFinder}
 \alias{lowTaxonFinder}
-\title{Given a dataframe and taxonomic rank vector—function (sorted highest to lowest) this function
+\title{####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+Given a dataframe and taxonomic rank vector—function (sorted highest to lowest) this function
 will mutate the column 'lowestRank' which will contain the lowest non-NA taxon value among the
 columns specified. Note that the syms() function is required to convert strings to variables}
 \usage{
@@ -17,6 +21,10 @@ lowTaxonFinder(df, rankVec)
 a data frame
 }
 \description{
+####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
+####### I PROBABLY DON'T NEED THIS ANYMORE AS I CAN JUST USE DPLYR:COALESCE
 Given a dataframe and taxonomic rank vector—function (sorted highest to lowest) this function
 will mutate the column 'lowestRank' which will contain the lowest non-NA taxon value among the
 columns specified. Note that the syms() function is required to convert strings to variables
