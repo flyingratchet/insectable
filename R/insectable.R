@@ -902,12 +902,13 @@ munge_gpx <- function(path){
 #' @return a dataframe with rounded lat lon values
 #' @export
 find_elevation <- function(df){
-  dfCoords <- df %>% select(lat, lon)
-  dfCoords$lat <- as.numeric(dfCoords$lat)
-  dfCoords$lon <- as.numeric(dfCoords$lon)
-  elevationQuery <- rgbif::elevation(dfCoords, username = 'roverso')
-  df$minimumElevationInMeters <- elevationQuery$elevation_geonames
-  df$minimumElevationInMeters <- as.character(df$minimumElevationInMeters)
+  df_coords <- df %>% select(lat, lon)
+  df_coords$lat %<>% as.numeric()
+  df_coords$lon %<>% as.numeric()
+  df_coords %<>% rename(decimalLatitude = lat, decimalLongitude = lon)
+  elevation_query <- rgbif::elevation(df_coords, username = 'roverso')
+  df$minimum_elevation <- elevation_query$elevation_geonames %>% as.character()
+  return(df)
 }
 
 
