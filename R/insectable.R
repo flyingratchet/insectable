@@ -954,9 +954,10 @@ rev_geocode <- function(df, poly, field_name, new_name){
 #' database and uses the lat lon columns to add additional reverse
 #' geocoded information if it is not already filled in.
 #' @param df a standard Cal Academy Insect Database format for insect labels
+#' @param api a Google api to access the reverse geocode data
 #' @export
 #' @return returns a database with reverse geocoded fields
-rev_geocode_insect <- function(df){
+rev_geocode_insect <- function(df, api){
   cat(paste0("Starting reverse geocoding\n"))
 
   df$Lat_bk <- df$Lat  # make backup of Lat Lon formatting
@@ -1045,9 +1046,6 @@ rev_geocode_insect <- function(df){
     df_coords$Adm1 <- ifelse(!is.na(arg_adm1_query$NAME_1), arg_adm1_query$NAME_1, df_coords$Adm1)
     df_coords$Adm2 <- ifelse(!is.na(arg_adm2_query$NAME_2), arg_adm2_query$NAME_2, df_coords$Adm2)
   }
-
-  # OBTAIN ELEVATION FROM GBIF FROM LAT/LON with Google API
-  api_key <- "AIzaSyBdXLWomxOy7h2F_q-PZPmvJ5tZ115N3X0"
 
   latlon <- df_coords[,colnames(df_coords) == "Lat" | colnames(df_coords) == "Lon"]
   colnames(latlon)[colnames(latlon) == "Lat"] <- "lat"

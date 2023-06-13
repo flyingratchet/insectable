@@ -6,10 +6,12 @@
 database and uses the lat lon columns to add additional reverse
 geocoded information if it is not already filled in.}
 \usage{
-rev_geocode_insect(df)
+rev_geocode_insect(df, api)
 }
 \arguments{
 \item{df}{a standard Cal Academy Insect Database format for insect labels}
+
+\item{api}{a Google api to access the reverse geocode data}
 }
 \value{
 returns a database with reverse geocoded fields
