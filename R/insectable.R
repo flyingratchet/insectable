@@ -1972,6 +1972,30 @@ find_max_sc <- function(cc.code, db_sc){
 
 
 
+#' Function that takes a data frame and creates one field containing data from all other fields
+#' for each row that are in MediaWiki data storage format. This format is used to make calls
+#' to the MediaWiki Cargo extension to produce a Cargo database without needed separate template
+#' calls stored on individual wiki pages
+#' @param df a data frame
+#' @param carge_table the name of the Cargo table to make a call to
+#' @param target_column the name of the R field to store the data
+#' @export
+#' @return a modified data frame
+df_to_mw_structure <- function(df, cargo_table, target_column) {
+  col_names <- colnames(df)
+  df %<>%
+    mutate({{ target_column }} := apply(df, 1, function(row) {
+      paste0("{{", cargo_table, "\n",
+             paste0(paste0("|", col_names, " = ", row, "\n"), collapse = ""),
+             "}}\n"
+      )
+    }))
+}
+
+
+
+
+
 #' function that adds brackets appropriately around lists that are nested in each element in a column
 #' @param column a data frame column
 #' @export
