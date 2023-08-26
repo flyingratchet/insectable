@@ -1447,7 +1447,7 @@ linnean_releveler <- function(df){
   df$class %<>% as_factor() %>% fct_relevel(class_sort)
   df$order %<>% as_factor() # for now don't have any sorting priorities for order
   # sorting by family (only have data for birds)
-  ebirdKey <- read_csv_char(fp_ebird_takon_key) # read in ebird key to get family taxonomy sorting
+  ebirdKey <- read_csv_char(paths$checklist$ebird_taxon_key) # read in ebird key to get family taxonomy sorting
   ebirdKey$famOrder %<>% as.integer()
   family_sort <- ebirdKey %>% arrange(famOrder) %>% distinct(family) %>% filter(!is.na(family)) %>% pull()
   rm(ebirdKey)
@@ -1484,7 +1484,11 @@ lowTaxonFinder <- function(df, rankVec){
     mutate(lowestRank = first_finder(do.call(rbind, rlang::syms(rev(rankVec)))))
   # find the highest rank for relocating the results column
   relocateSpot <- rankVec[1]
-  df %<>% cbind(lowestRank = df2$lowestRank) %>% relocate(lowestRank, .before = all_of(relocateSpot))
+  df %<>%
+    cbind(lowestRank = df2$lowestRank) %>%
+    relocate(lowestRank, .before = all_of(relocateSpot)) %>%
+    as_tibble()
+  return(df)
 }
 
 
@@ -2077,7 +2081,7 @@ lua_dict_builder <- function(df, col_vec){
 #' @param free_text the "Free Text" column for Cargo
 #' @param prefix a string with the prefix for each field which corresponds to the table name in Cargo
 #' @export
-cargo_formatr <- function(df, title = "title", free_text = "free_text", prefix){
+cargo_data_ns_formatr <- function(df, title = "title", free_text = "free_text", prefix){
   prefix %<>% snakecase::to_sentence_case()
   # rename columns to reflect Cargo demands
   df %<>% rename(Title = any_of(title), `Free Text` = any_of(free_text))
@@ -2093,8 +2097,15 @@ cargo_formatr <- function(df, title = "title", free_text = "free_text", prefix){
     str_replace("$", "]")
   # recombine data
   df %<>% bind_cols(df_no_format) %>% select(Title, everything(), `Free Text`)
+  # create a column that will link back to the data page for each forward-facing page in the Cargo structure
+  df %<>% mutate(data_page_title = paste0("Data:", prefix, "-", title)) %>%
+                   relocate(data_page_title, .after(title))
   return(df)
 }
+
+
+
+
 
 
 
