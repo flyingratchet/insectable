@@ -1976,6 +1976,44 @@ find_max_sc <- function(cc.code, db_sc){
 
 
 
+
+
+#' Function that takes a data frame with two columns, one with the MediaWiki
+#' page name and one with the text to be uploaded to overwrite the text on that page.
+#' @param df a data frame with columns named "Page_name" and "Wiki_text"
+#' @param mw_site_url a string representing a mediawiki site url
+#' @param bot_name a string representing a mediawiki bot account name
+#' @param bot_password  a string representing a mediawiki bot passord
+#' @param summary_message  a string representing a summary message to log with the page edit
+#' @export
+wiki_writer <- function(data, mw_site_url, bot_name, bot_password, summary_message){
+
+  # login to mediawiki site from python
+  site <- mwclient$Site(mw_site_url, path = "/") # change this later (shouldn't hard code credentials)
+  py$site_py <- site
+  site$login(bot_name, bot_password)
+  # transfer species content to Python environment
+  py$df_py <- data
+  # overwrite all data pages in a loop
+  # (Note! This code needs to be indented like this so that it get's passed to python correctly!)
+  py_run_string("
+for index, row in df_py.iterrows():
+    Page_name = row['Page_name']
+    Wiki_text = row['Wiki_text']
+    page = site_py.pages[Page_name]
+    page.save(Wiki_text, summary=summary_message)
+")
+
+}
+
+'Automated upload from roverso@python'
+
+
+
+
+
+
+
 #' Function that takes a data frame and creates one field containing data from all other fields
 #' for each row that are in MediaWiki data storage format. This format is used to make calls
 #' to the MediaWiki Cargo extension to produce a Cargo database without needed separate template
