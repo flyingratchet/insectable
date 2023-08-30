@@ -1994,6 +1994,7 @@ wiki_writer <- function(data, mw_site_url, bot_name, bot_password, summary_messa
   site$login(bot_name, bot_password)
   # transfer species content to Python environment
   py$df_py <- data
+  py$summary_message_py <- summary_message
   # overwrite all data pages in a loop
   # (Note! This code needs to be indented like this so that it get's passed to python correctly!)
   py_run_string("
