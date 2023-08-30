@@ -2002,7 +2002,7 @@ for index, row in df_py.iterrows():
     Page_name = row['Page_name']
     Wiki_text = row['Wiki_text']
     page = site_py.pages[Page_name]
-    page.save(Wiki_text, summary=summary_message)
+    page.save(Wiki_text, summary=summary_message_py)
 ")
 
 }
