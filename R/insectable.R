@@ -2007,12 +2007,6 @@ for index, row in df_py.iterrows():
 
 }
 
-'Automated upload from roverso@python'
-
-
-
-
-
 
 
 #' Function that takes a data frame and creates one field containing data from all other fields
