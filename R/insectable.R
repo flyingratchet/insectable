@@ -1999,10 +1999,10 @@ wiki_writer <- function(data, mw_site_url, bot_name, bot_password, summary_messa
   # (Note! This code needs to be indented like this so that it get's passed to python correctly!)
   py_run_string("
 for index, row in df_py.iterrows():
-    Page_name = row['Page_name']
-    Wiki_text = row['Wiki_text']
-    page = site_py.pages[Page_name]
-    page.save(Wiki_text, summary=summary_message_py)
+    Page_name = row['page_name']
+    Wiki_text = row['wiki_text']
+    page = site_py.pages[page_name]
+    page.save(wiki_text, summary=summary_message_py)
 ")
 
 }
@@ -2027,7 +2027,8 @@ df_to_mw_structure <- function(df, cargo_table, target_column) {
              paste0(paste0("|", col_names, " = ", row, "\n"), collapse = ""),
              "}}\n"
       )
-    })) %>% select(target_column)
+    })) %>%
+    select(target_column)
   return(df)
 }
 
