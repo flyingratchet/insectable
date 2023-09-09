@@ -1999,8 +1999,8 @@ wiki_writer <- function(data, mw_site_url, bot_name, bot_password, summary_messa
   # (Note! This code needs to be indented like this so that it get's passed to python correctly!)
   py_run_string("
 for index, row in df_py.iterrows():
-    Page_name = row['page_name']
-    Wiki_text = row['wiki_text']
+    page_name = row['page_name']
+    wiki_text = row['wiki_text']
     page = site_py.pages[page_name]
     page.save(wiki_text, summary=summary_message_py)
 ")
