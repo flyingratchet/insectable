@@ -1980,7 +1980,7 @@ find_max_sc <- function(cc.code, db_sc){
 
 #' Function that takes a data frame with two columns, one with the MediaWiki
 #' page name and one with the text to be uploaded to overwrite the text on that page.
-#' @param df a data frame with columns named "Page_name" and "Wiki_text"
+#' @param df a data frame with columns named "page_name" and "wiki_text"
 #' @param mw_site_url a string representing a mediawiki site url
 #' @param bot_name a string representing a mediawiki bot account name
 #' @param bot_password  a string representing a mediawiki bot passord

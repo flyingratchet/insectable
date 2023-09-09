@@ -16,7 +16,7 @@ wiki_writer(data, mw_site_url, bot_name, bot_password, summary_message)
 
 \item{summary_message}{a string representing a summary message to log with the page edit}
 
-\item{df}{a data frame with columns named "Page_name" and "Wiki_text"}
+\item{df}{a data frame with columns named "page_name" and "wiki_text"}
 }
 \description{
 Function that takes a data frame with two columns, one with the MediaWiki
