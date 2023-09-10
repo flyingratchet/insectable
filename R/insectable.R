@@ -1976,6 +1976,67 @@ find_max_sc <- function(cc.code, db_sc){
 
 
 
+#' Main function for the whole project to read in structured data and do the first phase of
+#' generic processing that all data receives for MediaWiki uploading
+#' @param data_fp the path to the original data source to read in
+#' @param data_table_prefix a string representing the prefix for the page in the "Data" namepace in MediaWiki associated with this upload
+#' @param wiki_page_title_col the column in the dataset that contains the values that will become the wiki page names
+#' @export
+airtable_reader <- function(data_fp, data_table_prefix, wiki_page_title_col){
+  df <- read_csv(data_fp) %>% rename(name = all_of(wiki_page_title_col))
+  names(df) %<>% snakecase::to_snake_case() # clean col names
+  # other general formatting for the wiki
+  df %<>% mutate(across(everything(), as.character)) %>%
+    # replace NA's for blanks
+    replace(is.na(.), "") %>%
+    # create a column that will link back to the data page for each forward-facing page in the Cargo structure
+    mutate(data_page_title = paste0(data_table_prefix, name)) %>%
+    relocate(name, .before = everything())
+  return(df)
+}
+
+
+
+
+
+#' This function takes a processed data frame from airtable_reader function and further formats
+#' it for uploading as structured data to MediaWiki
+#' @param df a data frame with at least one column called "name" that represent the name of the wiki page
+#' @param cargo_template_name a string representing the name fo the cargo_template's name associated with the upload
+#' @param cargo either TRUE or FALSE depending on whether formatting a cargo template call is desired
+#' @export
+generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE){
+  if(cargo){
+    # Remove some columns temporarily so they're not converted to a wiki field
+    no_format_col_names <- c("name", "includeonly_templates", "includeonly_cats", "noinclude_templates", "noinclude_cats")
+    no_format_cols <- select(df, any_of(no_format_col_names))
+    # get cols that should be formatted
+    format_cols <- select(df, -one_of(no_format_col_names))
+    # run function to convert to wiki format
+    format_cols %<>% df_to_mw_structure(cargo_table = cargo_template_name, target_column = "wiki_text")
+    # recombine un-formatted and formatted data
+    df <- bind_cols(no_format_cols, format_cols) # add untouched columns back in
+  } else{df %<>% mutate(wiki_text = "")} # make blank wiki_text in case if condition is not met
+
+  df %<>% mutate(
+    page_name = paste0(data_table_prefix, name),
+    wiki_text = paste0(
+      "<includeonly>",
+      wiki_text,
+      includeonly_templates,
+      includeonly_cats,
+      "</includeonly>",
+      "<noinclude>",
+      noinclude_templates,
+      noinclude_cats,
+      "</noinclude>"
+    )
+  ) %>% select(page_name, wiki_text)
+
+  return(df)
+}
+
+
 
 
 #' Function that takes a data frame with two columns, one with the MediaWiki
