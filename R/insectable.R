@@ -34,7 +34,8 @@ symb_tidy_rosetta <- function(df, direction = "forward"){
     lon = "decimal_longitude",
     minimum_elevation = "minimum_elevation_in_meters",
     coordinate_uncertainty = "coordinate_uncertainty_in_meters",
-    date = "event_date"
+    date = "event_date",
+    time = "event_time"
   )
 
   if(direction == "forward"){
@@ -1980,7 +1981,7 @@ find_max_sc <- function(cc.code, db_sc){
 #' generic processing that all data receives for MediaWiki uploading
 #' @param data_fp the path to the original data source to read in
 #' @param data_table_prefix a string representing the prefix for the page in the "Data" namepace in MediaWiki associated with this upload
-#' @param wiki_page_title_col the column in the dataset that contains the values that will become the wiki page names
+#' @param wiki_page_title_col the column in the data set that contains the values that will become the wiki page names
 #' @export
 airtable_reader <- function(data_fp, data_table_prefix, wiki_page_title_col){
   df <- read_csv(data_fp) %>% rename(name = all_of(wiki_page_title_col))

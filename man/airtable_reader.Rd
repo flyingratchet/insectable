@@ -12,7 +12,7 @@ airtable_reader(data_fp, data_table_prefix, wiki_page_title_col)
 
 \item{data_table_prefix}{a string representing the prefix for the page in the "Data" namepace in MediaWiki associated with this upload}
 
-\item{wiki_page_title_col}{the column in the dataset that contains the values that will become the wiki page names}
+\item{wiki_page_title_col}{the column in the data set that contains the values that will become the wiki page names}
 }
 \description{
 Main function for the whole project to read in structured data and do the first phase of
