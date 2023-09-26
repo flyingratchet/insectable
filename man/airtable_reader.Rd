@@ -5,14 +5,14 @@
 \title{Main function for the whole project to read in structured data and do the first phase of
 generic processing that all data receives for MediaWiki uploading}
 \usage{
-airtable_reader(data_fp, data_table_prefix, wiki_page_title_col)
+airtable_reader(data_fp, wiki_page_title_col = "name", data_table_prefix = NA)
 }
 \arguments{
 \item{data_fp}{the path to the original data source to read in}
 
-\item{data_table_prefix}{a string representing the prefix for the page in the "Data" namepace in MediaWiki associated with this upload}
-
 \item{wiki_page_title_col}{the column in the data set that contains the values that will become the wiki page names}
+
+\item{data_table_prefix}{a string representing the prefix for the page in the "Data" namepace in MediaWiki associated with this upload}
 }
 \description{
 Main function for the whole project to read in structured data and do the first phase of

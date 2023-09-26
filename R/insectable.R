@@ -1983,16 +1983,18 @@ find_max_sc <- function(cc.code, db_sc){
 #' @param data_table_prefix a string representing the prefix for the page in the "Data" namepace in MediaWiki associated with this upload
 #' @param wiki_page_title_col the column in the data set that contains the values that will become the wiki page names
 #' @export
-airtable_reader <- function(data_fp, data_table_prefix, wiki_page_title_col){
-  df <- read_csv(data_fp) %>% rename(name = all_of(wiki_page_title_col))
+airtable_reader <- function(data_fp, wiki_page_title_col = "name", data_table_prefix = NA){
+  df <- read_csv(data_fp) %>% rename(name = all_of(wiki_page_title_col)) %>% relocate(name, .before = everything())
   names(df) %<>% snakecase::to_snake_case() # clean col names
   # other general formatting for the wiki
   df %<>% mutate(across(everything(), as.character)) %>%
     # replace NA's for blanks
-    replace(is.na(.), "") %>%
-    # create a column that will link back to the data page for each forward-facing page in the Cargo structure
-    mutate(data_page_title = paste0(data_table_prefix, name)) %>%
-    relocate(name, .before = everything())
+    replace(is.na(.), "")
+
+  #  if necessary, create a column that will link back to the data page for each forward-facing page in the Cargo structure
+  if(!is.na(data_table_prefix)){
+    df %<>% mutate(data_page_title = paste0(data_table_prefix, name))
+    }
   return(df)
 }
 
