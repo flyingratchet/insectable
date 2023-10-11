@@ -2082,8 +2082,8 @@ for index, row in df_py.iterrows():
 #' @param target_column the name of the R field to store the data
 #' @export
 #' @return a modified data frame
-df_to_mw_structure <- function(df, cargo_table, target_column) {
-  names(df) %<>% to_sentence_case() %>% str_replace_all(" ", "_") # change field name formatting for wiki
+df_to_mw_structure <- function(df, cargo_table, target_column, abbreviations) {
+  names(df) %<>% to_sentence_case(abbreviations = abbreviations) %>% str_replace_all(" ", "_") # change field name formatting for wiki
   col_names <- colnames(df)
   df %<>%
     mutate({{ target_column }} := apply(df, 1, function(row) {
