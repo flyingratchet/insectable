@@ -2017,7 +2017,7 @@ generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, abbrev
     # get cols that should be formatted
     format_cols <- select(df, -one_of(no_format_col_names))
     # run function to convert to wiki format
-    format_cols %<>% df_to_mw_structure(cargo_table = cargo_template_name, target_column = "wiki_text")
+    format_cols %<>% df_to_mw_structure(cargo_table = cargo_template_name, target_column = "wiki_text", abbreviations)
     # recombine un-formatted and formatted data
     df <- bind_cols(no_format_cols, format_cols) # add untouched columns back in
   } else{df %<>% mutate(wiki_text = "")} # make blank wiki_text in case if condition is not met
