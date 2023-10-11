@@ -5,7 +5,7 @@
 \title{This function takes a processed data frame from airtable_reader function and further formats
 it for uploading as structured data to MediaWiki}
 \usage{
-generic_wiki_formatter(df, cargo_template_name, cargo = TRUE)
+generic_wiki_formatter(df, cargo_template_name, cargo = TRUE, abbreviations)
 }
 \arguments{
 \item{df}{a data frame with at least one column called "name" that represent the name of the wiki page}
@@ -13,6 +13,8 @@ generic_wiki_formatter(df, cargo_template_name, cargo = TRUE)
 \item{cargo_template_name}{a string representing the name fo the cargo_template's name associated with the upload}
 
 \item{cargo}{either TRUE or FALSE depending on whether formatting a cargo template call is desired}
+
+\item{abbreviations}{a comma separated list representing strings to be treated as abbreviations by snakecase function}
 }
 \description{
 This function takes a processed data frame from airtable_reader function and further formats

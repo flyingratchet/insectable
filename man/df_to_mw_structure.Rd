@@ -14,6 +14,8 @@ df_to_mw_structure(df, cargo_table, target_column, abbreviations)
 
 \item{target_column}{the name of the R field to store the data}
 
+\item{abbreviations}{a comma separated list representing strings to be treated as abbreviations by snakecase function}
+
 \item{carge_table}{the name of the Cargo table to make a call to}
 }
 \value{

@@ -2007,8 +2007,9 @@ airtable_reader <- function(data_fp, wiki_page_title_col = "name", data_table_pr
 #' @param df a data frame with at least one column called "name" that represent the name of the wiki page
 #' @param cargo_template_name a string representing the name fo the cargo_template's name associated with the upload
 #' @param cargo either TRUE or FALSE depending on whether formatting a cargo template call is desired
+#' @param abbreviations a comma separated list representing strings to be treated as abbreviations by snakecase function
 #' @export
-generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE){
+generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, abbreviations){
   if(cargo){
     # Remove some columns temporarily so they're not converted to a wiki field
     no_format_col_names <- c("name", "includeonly_templates", "includeonly_cats", "noinclude_templates", "noinclude_cats")
@@ -2080,6 +2081,7 @@ for index, row in df_py.iterrows():
 #' @param df a data frame
 #' @param carge_table the name of the Cargo table to make a call to
 #' @param target_column the name of the R field to store the data
+#' @param abbreviations a comma separated list representing strings to be treated as abbreviations by snakecase function
 #' @export
 #' @return a modified data frame
 df_to_mw_structure <- function(df, cargo_table, target_column, abbreviations) {
