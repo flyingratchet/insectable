@@ -9,6 +9,8 @@ filter_time_diff(obs, ind = 1)
 }
 \arguments{
 \item{obs}{observation database in standard critter club format}
+
+\item{ind}{need to document}
 }
 \description{
 this function filters out records based on time difference between observations

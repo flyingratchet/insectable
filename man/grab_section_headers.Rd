@@ -8,11 +8,11 @@ an entry and associate it with all entries below it}
 grab_section_headers(base_text_loc, header_loc, input_vec)
 }
 \arguments{
-\item{base.text.loc}{the locations (row numbers) of the entries}
+\item{base_text_loc}{the locations (row numbers) of the entries}
 
-\item{header.loc}{the locations (row numbers) of the headers}
+\item{header_loc}{the locations (row numbers) of the headers}
 
-\item{input.vec}{the input text vector that contains both of the above}
+\item{input_vec}{the input text vector that contains both of the above}
 }
 \value{
 a data frame

@@ -10,7 +10,7 @@ flatten_rgbif(df, result_column)
 \arguments{
 \item{df}{a df with a column that contains nested query response}
 
-\item{resultColumn}{name of result column with response from rgbif::backbone_name()}
+\item{result_column}{name of result column with response from rgbif::backbone_name()}
 }
 \value{
 a data frame

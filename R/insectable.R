@@ -2,9 +2,9 @@
 
 #' This function is used with text parsing to grab a header that is up above
 #' an entry and associate it with all entries below it
-#' @param base.text.loc the locations (row numbers) of the entries
-#' @param header.loc the locations (row numbers) of the headers
-#' @param input.vec the input text vector that contains both of the above
+#' @param base_text_loc the locations (row numbers) of the entries
+#' @param header_loc the locations (row numbers) of the headers
+#' @param input_vec the input text vector that contains both of the above
 #' @return a data frame
 #' @export
 grab_section_headers <- function(base_text_loc, header_loc, input_vec){
@@ -584,6 +584,7 @@ check_empty <- function(df){
 #' this function filters out records based on time difference between observations
 #'it assumes the data is sorted first by a unique id vector and then by ascending date/time
 #' @param obs observation database in standard critter club format
+#' @param ind need to document
 #' @export
 filter_time_diff <- function(obs, ind = 1) {
   ind_next <- first(which(difftime(obs, obs[ind], units = "hours") > 1))
@@ -1248,7 +1249,7 @@ pre_query_patchr <- function(df, band_aid){
 #' Flattens the nested structure of a rgbif backbone_name query
 #'and streamlines other inconsistencies in data structure
 #' @param df a df with a column that contains nested query response
-#' @param resultColumn name of result column with response from rgbif::backbone_name()
+#' @param result_column name of result column with response from rgbif::backbone_name()
 #' @return a data frame
 #' @export
 flatten_rgbif <- function(df, result_column){
@@ -1933,7 +1934,7 @@ gsub2 <- function(pattern, replacement, x, ...) {
 
 #' paste function that doesn't paste NA's as strings
 #' @export
-paste3 <- function(...,sep=", ") {
+paste3 <- function(..., sep = ", ") {
   L <- list(...)
   L <- lapply(L,function(x) {x[is.na(x)] <- ""; x})
   ret <-gsub(paste0("(^",sep,"|",sep,"$)"),"",
@@ -2006,7 +2007,7 @@ airtable_reader <- function(data_fp, wiki_page_title_col = "name", data_table_pr
 #' to the MediaWiki Cargo extension to produce a Cargo database without needed separate template
 #' calls stored on individual wiki pages
 #' @param df a data frame
-#' @param carge_table the name of the Cargo table to make a call to
+#' @param cargo_table the name of the Cargo table to make a call to
 #' @param target_column the name of the R field to store the data
 #' @param col_changes a comma separated list representing strings to be treated as abbreviations by snakecase function
 #' @export
