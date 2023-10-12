@@ -2013,6 +2013,7 @@ airtable_reader <- function(data_fp, wiki_page_title_col = "name", data_table_pr
 #' @return a modified data frame
 df_to_mw_structure <- function(df, cargo_table, target_column, col_changes) {
   names(df) %<>% to_sentence_case() %>% str_replace_all(" ", "_") # change field name formatting for wiki
+  df %<>% rename(!!!col_changes)
   col_names <- colnames(df)
   df %<>%
     mutate({{ target_column }} := apply(df, 1, function(row) {
@@ -2045,6 +2046,7 @@ generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, col_ch
     format_cols <- select(df, -one_of(no_format_col_names))
     # run function to convert to wiki format
     format_cols %<>% df_to_mw_structure(cargo_table = cargo_template_name, target_column = "wiki_text", col_changes)
+
     # recombine un-formatted and formatted data
     df <- bind_cols(no_format_cols, format_cols) # add untouched columns back in
   } else{df %<>% mutate(wiki_text = "")} # make blank wiki_text in case if condition is not met
