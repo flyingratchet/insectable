@@ -2001,15 +2001,42 @@ airtable_reader <- function(data_fp, wiki_page_title_col = "name", data_table_pr
 
 
 
+#' Function that takes a data frame and creates one field containing data from all other fields
+#' for each row that are in MediaWiki data storage format. This format is used to make calls
+#' to the MediaWiki Cargo extension to produce a Cargo database without needed separate template
+#' calls stored on individual wiki pages
+#' @param df a data frame
+#' @param carge_table the name of the Cargo table to make a call to
+#' @param target_column the name of the R field to store the data
+#' @param col_changes a comma separated list representing strings to be treated as abbreviations by snakecase function
+#' @export
+#' @return a modified data frame
+df_to_mw_structure <- function(df, cargo_table, target_column, col_changes) {
+  names(df) %<>% to_sentence_case() %>% str_replace_all(" ", "_") # change field name formatting for wiki
+  col_names <- colnames(df)
+  df %<>%
+    mutate({{ target_column }} := apply(df, 1, function(row) {
+      paste0("{{", cargo_table, "\n",
+             paste0(paste0("|", col_names, " = ", row, "\n"), collapse = ""),
+             "}}\n"
+      )
+    })) %>%
+    select(target_column)
+  return(df)
+}
+
+
+
+
 
 #' This function takes a processed data frame from airtable_reader function and further formats
 #' it for uploading as structured data to MediaWiki
 #' @param df a data frame with at least one column called "name" that represent the name of the wiki page
 #' @param cargo_template_name a string representing the name fo the cargo_template's name associated with the upload
 #' @param cargo either TRUE or FALSE depending on whether formatting a cargo template call is desired
-#' @param abbreviations a comma separated list representing strings to be treated as abbreviations by snakecase function
+#' @param col_changes a comma separated list representing strings to be treated as abbreviations by snakecase function
 #' @export
-generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, abbreviations){
+generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, col_changes){
   if(cargo){
     # Remove some columns temporarily so they're not converted to a wiki field
     no_format_col_names <- c("name", "includeonly_templates", "includeonly_cats", "noinclude_templates", "noinclude_cats")
@@ -2017,7 +2044,7 @@ generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, abbrev
     # get cols that should be formatted
     format_cols <- select(df, -one_of(no_format_col_names))
     # run function to convert to wiki format
-    format_cols %<>% df_to_mw_structure(cargo_table = cargo_template_name, target_column = "wiki_text", abbreviations)
+    format_cols %<>% df_to_mw_structure(cargo_table = cargo_template_name, target_column = "wiki_text", col_changes)
     # recombine un-formatted and formatted data
     df <- bind_cols(no_format_cols, format_cols) # add untouched columns back in
   } else{df %<>% mutate(wiki_text = "")} # make blank wiki_text in case if condition is not met
@@ -2070,32 +2097,6 @@ for index, row in df_py.iterrows():
     page.save(wiki_text, summary=summary_message_py)
 ")
 
-}
-
-
-
-#' Function that takes a data frame and creates one field containing data from all other fields
-#' for each row that are in MediaWiki data storage format. This format is used to make calls
-#' to the MediaWiki Cargo extension to produce a Cargo database without needed separate template
-#' calls stored on individual wiki pages
-#' @param df a data frame
-#' @param carge_table the name of the Cargo table to make a call to
-#' @param target_column the name of the R field to store the data
-#' @param abbreviations a comma separated list representing strings to be treated as abbreviations by snakecase function
-#' @export
-#' @return a modified data frame
-df_to_mw_structure <- function(df, cargo_table, target_column, abbreviations) {
-  names(df) %<>% to_sentence_case(abbreviations = abbreviations) %>% str_replace_all(" ", "_") # change field name formatting for wiki
-  col_names <- colnames(df)
-  df %<>%
-    mutate({{ target_column }} := apply(df, 1, function(row) {
-      paste0("{{", cargo_table, "\n",
-             paste0(paste0("|", col_names, " = ", row, "\n"), collapse = ""),
-             "}}\n"
-      )
-    })) %>%
-    select(target_column)
-  return(df)
 }
 
 

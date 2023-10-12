@@ -7,14 +7,14 @@ for each row that are in MediaWiki data storage format. This format is used to m
 to the MediaWiki Cargo extension to produce a Cargo database without needed separate template
 calls stored on individual wiki pages}
 \usage{
-df_to_mw_structure(df, cargo_table, target_column, abbreviations)
+df_to_mw_structure(df, cargo_table, target_column, col_changes)
 }
 \arguments{
 \item{df}{a data frame}
 
 \item{target_column}{the name of the R field to store the data}
 
-\item{abbreviations}{a comma separated list representing strings to be treated as abbreviations by snakecase function}
+\item{col_changes}{a comma separated list representing strings to be treated as abbreviations by snakecase function}
 
 \item{carge_table}{the name of the Cargo table to make a call to}
 }
