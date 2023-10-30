@@ -5,7 +5,7 @@
 \title{This function takes a processed data frame from airtable_reader function and further formats
 it for uploading as structured data to MediaWiki}
 \usage{
-generic_wiki_formatter(df, cargo_template_name, cargo = TRUE, col_changes)
+generic_wiki_formatter(df, cargo_template_name, cargo = TRUE, col_changes = NA)
 }
 \arguments{
 \item{df}{a data frame with at least one column called "name" that represent the name of the wiki page}

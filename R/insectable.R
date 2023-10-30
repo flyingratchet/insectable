@@ -2012,9 +2012,14 @@ airtable_reader <- function(data_fp, wiki_page_title_col = "name", data_table_pr
 #' @param col_changes a comma separated list representing strings to be treated as abbreviations by snakecase function
 #' @export
 #' @return a modified data frame
-df_to_mw_structure <- function(df, cargo_table, target_column, col_changes) {
+df_to_mw_structure <- function(df, cargo_table, target_column, col_changes = NA) {
   names(df) %<>% to_sentence_case() %>% str_replace_all(" ", "_") # change field name formatting for wiki
+
+  if(!is.na(col_changes)){
   df %<>% rename(!!!col_changes)
+  }
+
+
   col_names <- colnames(df)
   df %<>%
     mutate({{ target_column }} := apply(df, 1, function(row) {
@@ -2038,7 +2043,7 @@ df_to_mw_structure <- function(df, cargo_table, target_column, col_changes) {
 #' @param cargo either TRUE or FALSE depending on whether formatting a cargo template call is desired
 #' @param col_changes a comma separated list representing strings to be treated as abbreviations by snakecase function
 #' @export
-generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, col_changes){
+generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, col_changes = NA){
   if(cargo){
     # Remove some columns temporarily so they're not converted to a wiki field
     no_format_col_names <- c("name", "includeonly_templates", "includeonly_cats", "noinclude_templates", "noinclude_cats")
