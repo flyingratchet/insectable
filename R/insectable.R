@@ -2046,7 +2046,7 @@ df_to_mw_structure <- function(df, cargo_table, target_column, col_changes = NA)
 generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, col_changes = NA){
   if(cargo){
     # Remove some columns temporarily so they're not converted to a wiki field
-    no_format_col_names <- c("name", "includeonly_templates", "includeonly_cats", "noinclude_templates", "noinclude_cats")
+    no_format_col_names <- c("name", "category_tags", "includeonly_templates", "includeonly_cats", "noinclude_templates", "noinclude_cats")
     no_format_cols <- select(df, any_of(no_format_col_names))
     # get cols that should be formatted
     format_cols <- select(df, -one_of(no_format_col_names))
