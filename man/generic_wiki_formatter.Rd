@@ -10,7 +10,7 @@ generic_wiki_formatter(df, cargo_template_name, cargo = TRUE, col_changes = NA)
 \arguments{
 \item{df}{a data frame with at least one column called "name" that represent the name of the wiki page}
 
-\item{cargo_template_name}{a string representing the name fo the cargo_template's name associated with the upload}
+\item{cargo_template_name}{a string representing the name of the cargo_template's name associated with the upload}
 
 \item{cargo}{either TRUE or FALSE depending on whether formatting a cargo template call is desired}
 

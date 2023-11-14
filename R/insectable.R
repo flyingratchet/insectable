@@ -2039,7 +2039,7 @@ df_to_mw_structure <- function(df, cargo_table, target_column, col_changes = NA)
 #' This function takes a processed data frame from airtable_reader function and further formats
 #' it for uploading as structured data to MediaWiki
 #' @param df a data frame with at least one column called "name" that represent the name of the wiki page
-#' @param cargo_template_name a string representing the name fo the cargo_template's name associated with the upload
+#' @param cargo_template_name a string representing the name of the cargo_template's name associated with the upload
 #' @param cargo either TRUE or FALSE depending on whether formatting a cargo template call is desired
 #' @param col_changes a comma separated list representing strings to be treated as abbreviations by snakecase function
 #' @export
@@ -2056,6 +2056,8 @@ generic_wiki_formatter <- function(df, cargo_template_name, cargo = TRUE, col_ch
     # recombine un-formatted and formatted data
     df <- bind_cols(no_format_cols, format_cols) # add untouched columns back in
   } else{df %<>% mutate(wiki_text = "")} # make blank wiki_text in case if condition is not met
+
+  data_table_prefix <- paste0("Data:", cargo_template_name, "-")
 
   df %<>% mutate(
     page_name = paste0(data_table_prefix, name),
