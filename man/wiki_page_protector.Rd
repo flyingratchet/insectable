@@ -19,7 +19,7 @@ the names of pages intended for upload or verification.}
 }
 \value{
 A data frame containing the subset of `pages_df` where page names do not exist
-        on the wiki site, excluding the intermediate regex-processed names.
+on the wiki site, excluding the intermediate regex-processed names.
 }
 \description{
 Protect Wiki Pages from Overwrite
