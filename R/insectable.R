@@ -2634,7 +2634,7 @@ wiki_writer <- function(data, site_url, bot_name, bot_password, summary_message,
 #' @return A data frame containing the subset of `pages_df` where page names do not exist
 #'         on the wiki site, excluding the intermediate regex-processed names.
 #' @export
-# Helper function to filter wiki pages that already exist so they are not overwritten
+# Helper function to filter wiki pages that already exist so they are not overwritten.
 wiki_page_protector <- function(pages_df, site_py) {
 
   # get names of all pages on hopperwiki
