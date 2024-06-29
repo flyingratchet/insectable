@@ -2627,11 +2627,11 @@ wiki_writer <- function(data, site_url, bot_name, bot_password, summary_message,
 #' It first retrieves a list of all existing pages from the specified MediaWiki site.
 #' Each page name is processed to remove non-alphabetic characters for a cleaner comparison.
 #' Finally, it determines which pages from the provided data frame do not exist on the wiki
-#' and returns these as a new dataframe.
-#' @param pages_df A dataframe containing at least one column `page_name` which includes
+#' and returns these as a new data frame.
+#' @param pages_df A data frame containing at least one column `page_name` which includes
 #'        the names of pages intended for upload or verification.
 #' @param site_py A Python object representing the MediaWiki site, interfaced through reticulate.
-#' @return A dataframe containing the subset of `pages_df` where page names do not exist
+#' @return A data frame containing the subset of `pages_df` where page names do not exist
 #'         on the wiki site, excluding the intermediate regex-processed names.
 #' @export
 # Helper function to filter wiki pages that already exist so they are not overwritten
